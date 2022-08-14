@@ -5,8 +5,11 @@ class Map:
 	def __init__(self,player,y,x):
 		self.width = x*2
 		self.height = y*2
+
 		self.player = player
 		self.objects = list()
+		self.ais = list()
+
 		self.tiles = np.ndarray((y*2,x*2),dtype=np.object)
 		self.explored = np.ndarray((y*2,x*2),dtype=np.object)
 		self.explored.fill(False)
@@ -40,11 +43,11 @@ class Map:
 			 return False
 
 	def move_map(self,keypressed):
-		
+
 		if keypressed =="up":
 			newline = np.ndarray((self.player.speed,self.width),dtype=np.object)
 			newexplored = np.ndarray((self.player.speed,self.width),dtype=np.object)
-			
+
 			for x in range(0,self.width):
 				newline[0,x]=Empty()
 				newexplored[0,x] = False
@@ -57,7 +60,7 @@ class Map:
 
 			for obj in self.objects:
 				obj.y+=1
-			
+
 		elif keypressed =="down":
 			newline = np.ndarray((self.player.speed,self.width),dtype=np.object)
 			newexplored = np.ndarray((self.player.speed,self.width),dtype=np.object)
@@ -109,8 +112,8 @@ class Map:
 			for obj in self.objects:
 				obj.x-=1
 
-		
-		
+
+
 
 
 	def gen_features(self):
@@ -118,7 +121,7 @@ class Map:
 		for i in range(0,self.width):
 			for j in range(0,self.height):
 				self.tiles[j,i]=Empty()
-	
+
 		self.tiles[11,10] = Wall(5)
 		self.tiles[12,10] = Wall(5)
 		self.tiles[13,10] = Wall(5)
@@ -127,12 +130,15 @@ class Map:
 	def isSeeThrough(self,y,x):
 		#print(x,y)
 		return(self.tiles[y,x].opaque)
-		
+
 class Empty:
 	def __init__(self):
 		self.opaque = False
 		self.symbol = " "
 		self.prevState=False
+		self.desc = "There's nothing there."
+		self.can_walk = True
+
 
 class Wall:
 	def __init__(self,height):
@@ -140,10 +146,5 @@ class Wall:
 		self.opaque = True
 		self.symbol = "H"
 		self.prevState=False
-		
-
-
-
-
-
-		
+		self.desc = "That's a wall."
+		self.can_walk = False

@@ -4,11 +4,11 @@ from ff_Player import Player
 from ff_Object import Object
 from ff_engine import Engine
 
-import time 
+import time
 
 def initiate():
 
-	game = Engine("test")
+	game = Engine("explore")
 	game.setup_world()
 	game.clear()
 	return(game)
@@ -18,7 +18,7 @@ def update(game):
 	game.display()
 	game.update_player()
 	#time.sleep(0.15)
-	
+
 
 game = initiate()
 while True:
