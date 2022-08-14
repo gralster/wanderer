@@ -17,6 +17,7 @@ def update(game):
 	game.clear()
 	game.display()
 	game.update_player()
+	game.update_ai()
 	#time.sleep(0.15)
 
 

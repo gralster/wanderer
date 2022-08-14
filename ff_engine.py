@@ -8,6 +8,7 @@ import numpy as np
 from ff_Map import Map
 from ff_Player import Player
 from ff_Object import Object
+from ff_AI import AI
 from UI import Selector
 
 
@@ -33,8 +34,6 @@ class Engine:
 		self.whole_screen_refresh=False
 
 	def setup_world(self):
-		pot = Object(12,12,"Pot","P","A pot for cooking")
-		self.world.gain(pot)
 		self.world.gen_features()
 
 	### UPDATING #######################################
@@ -143,6 +142,15 @@ class Engine:
 							self.print_bottomf(obj.desc)
 						something_there = True
 
+				for ai in self.world.ais:
+					if self.highlight.x == ai.x and self.highlight.y == ai.y:
+						canSee =self.inFOV(self.player,self.highlight.y,self.highlight.x)
+						if canSee:
+							self.print_bottomf(ai.desc)
+						else:
+							self.print_bottomf(ai.desc)
+						something_there = True
+
 				if something_there == False:
 					self.print_bottomf(self.world.tiles[self.highlight.y,self.highlight.x].desc)
 
@@ -152,6 +160,9 @@ class Engine:
 				self.mode="explore"
 
 
+	def update_ai(self):
+		for ai in self.world.ais:
+			ai.update()
 
 
 	def transfer_object(self,index,giver,receiver,loc):
@@ -202,6 +213,11 @@ class Engine:
 						self.world.explored[j,i]=True
 						current_vis[j,i]=1
 
+			for ai in self.world.ais:
+				if ai.x != ai.last_x or ai.y!=ai.last_y:
+					current_vis[ai.y,ai.x]-=1
+					current_vis[ai.last_y,ai.last_x]-=1
+
 			changes = current_vis-self.last_vis
 
 			if self.whole_screen_refresh:
@@ -213,6 +229,8 @@ class Engine:
 				self.display_ground(changes)
 
 				self.display_objects(changes)
+
+				self.display_ai(changes)
 
 			# update display of player
 			with self.t.location(y=self.player.y,x=self.player.x):
@@ -276,22 +294,28 @@ class Engine:
 
 	def display_objects(self,changes):
 
-		# update display of objects
-		self.print_bottomf(len(self.world.objects),offset=4)
 		for obj in self.world.objects:
 			canSee =self.inFOV(self.player,obj.y,obj.x)
-			self.print_bottomf(canSee,offset = 1)
-			self.print_bottomf(changes[obj.y,obj.x],offset = 2)
 			with self.t.location(y=obj.y,x=obj.x):
 				if canSee:
 					print(self.t.red_on_green(obj.symbol))
 				if changes[obj.y,obj.x] ==-1:
 					print(self.t.red_on_darkseagreen4(obj.symbol))
 
+	def display_ai(self,changes):
+		for ai in self.world.ais:
+			canSee =self.inFOV(self.player,ai.y,ai.x)
+			with self.t.location(y=ai.y,x=ai.x):
+				if canSee:
+					print(self.t.black_on_green(ai.symbol))
+				if changes[ai.y,ai.x] ==-1:
+					print(self.t.black_on_darkseagreen4(ai.symbol))
+
 	def whole_screen_display(self):
 
 		for i in range(0,self.x):
 			for j in range(0,self.y):
+				self.print_bottomf(i)
 				canSee =self.inFOV(self.player,j,i)
 				if canSee:
 					with self.t.location(y=j,x=i):
@@ -321,9 +345,13 @@ class Engine:
 	def print_bottomf(self,text,offset=0):
 		#self.clear_text_box()
 		with self.t.location(0, self.t.height - self.textbox_height+offset):
-			self.t.clear_eol()
 			print(text)
 
+	def print_bottom_time(self,text, time = 5):
+		self.clear_text_box()
+		with self.t.location(0, self.t.height - self.textbox_height):
+			print(text)
+			time.sleep(time)
 
 	def clear_text_box(self):
 		with self.t.location(0, self.t.height - self.textbox_height):

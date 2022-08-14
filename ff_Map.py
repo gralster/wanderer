@@ -1,5 +1,8 @@
 import numpy as np
 
+from ff_Object import Object
+from ff_AI import AI
+
 class Map:
 
 	def __init__(self,player,y,x):
@@ -14,12 +17,37 @@ class Map:
 		self.explored = np.ndarray((y*2,x*2),dtype=np.object)
 		self.explored.fill(False)
 
+
+
+
+	def gen_features(self):
+
+		pot = Object(12,12,"Pot","P","A pot for cooking")
+		self.gain(pot)
+
+		Maximilian = AI("Maximilian","M",16,18,"a raven")
+		self.populate(Maximilian)
+
+		for i in range(0,self.width):
+			for j in range(0,self.height):
+				self.tiles[j,i]=Empty()
+
+		self.tiles[11,10] = Wall(5)
+		self.tiles[12,10] = Wall(5)
+		self.tiles[13,10] = Wall(5)
+		self.tiles[11,11] = Wall(5)
+
 	def gain(self,obj):
 		self.objects.append(obj)
 
 	def lose(self,index):
 		obj = self.objects.pop(index)
 		return(obj)
+
+	def populate(self,ai):
+		self.ais.append(ai)
+
+
 
 	def get_at_location(self,y,x):
 		at_loc = list()
@@ -112,20 +140,6 @@ class Map:
 			for obj in self.objects:
 				obj.x-=1
 
-
-
-
-
-	def gen_features(self):
-
-		for i in range(0,self.width):
-			for j in range(0,self.height):
-				self.tiles[j,i]=Empty()
-
-		self.tiles[11,10] = Wall(5)
-		self.tiles[12,10] = Wall(5)
-		self.tiles[13,10] = Wall(5)
-		self.tiles[11,11] = Wall(5)
 
 	def isSeeThrough(self,y,x):
 		#print(x,y)
