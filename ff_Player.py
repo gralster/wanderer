@@ -11,6 +11,7 @@ class Player:
 		self.sight = 15
 		self.symbol = "x"
 		self.objects = list()
+		self.hearing = 10
 
 	def gain(self,obj):
 		self.objects.append(obj)

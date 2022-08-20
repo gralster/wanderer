@@ -11,6 +11,7 @@ class AI:
         self.desc = desc
         self.symbol = symbol
         self.speed =1
+        self.hearing = 10
 
     def update(self):
         self.last_x = self.x
@@ -24,3 +25,12 @@ class AI:
             self.x -=self.speed
         elif rand ==4:
             self.x +=self.speed
+
+    def respond(self,input):
+        if input == "Hello!":
+            return "Hello, my name is "+self.name
+        elif input == "Fuck you all!":
+            return "Go fuck youself!"
+        elif input == "Help!":
+            return "Not my problem..."
+

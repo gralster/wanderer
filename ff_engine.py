@@ -1,7 +1,10 @@
+from cmath import sqrt
+from xml.etree.ElementTree import tostring
 import keyboard
 import os
 import math
 import sys
+import time
 from blessed import Terminal
 import numpy as np
 
@@ -17,7 +20,7 @@ class Engine:
 
 	### INITIALISATION ################################
 
-	def __init__(self,mode):
+	def __init__(self,mode,log =False):
 		os.system('cls' if os.name == 'nt' else 'clear')
 		np.set_printoptions(threshold = sys.maxsize)
 		self.mode = mode
@@ -32,6 +35,12 @@ class Engine:
 
 		self.last_vis = np.zeros((self.y,self.x))
 		self.whole_screen_refresh=False
+		self.ui = np.zeros((self.y,self.x))
+
+		self.log = log
+		if log:
+			os.remove('log.txt')
+			self.errorfile =  open('log.txt', 'a')
 
 	def setup_world(self):
 		self.world.gen_features()
@@ -63,13 +72,19 @@ class Engine:
 					self.player.x += self.player.speed
 
 			if self.world.player_near_edge():
+				if self.log:
+					self.errorfile.write("pushing edge of map\n")
 				self.player.y = self.player.last_y
 				self.player.x = self.player.last_x
 				self.world.move_map(keypressed)
 				self.whole_screen_refresh=True
 
+
+
+
 			# actions
 
+			# pick up
 			elif keypressed ==".":
 				obj_indexes =self.world.get_at_location(self.player.y,self.player.x)
 				if obj_indexes==[]:
@@ -78,6 +93,7 @@ class Engine:
 					for index in obj_indexes:
 						self.transfer_object(index,self.world,self.player,(self.player.x,self.player.y))
 
+			#drop
 			elif keypressed == ",":
 				items = self.player.get_inventory()
 				if items ==[]:
@@ -89,11 +105,16 @@ class Engine:
 					selection = int(input()[-1])
 					self.transfer_object(selection,self.player,self.world,(self.player.x,self.player.y))
 
-
+			# see inventory
 			elif keypressed == "i":
 				self.print_bottom(self.player.get_inventory())
 
+			# look around
 			elif keypressed == "l":
+
+				if self.log:
+					self.errorfile.write("look mode activated\n")
+
 				self.print_bottomf("You look around...")
 				self.mode ="look"
 				self.highlight.x = self.player.x
@@ -102,13 +123,48 @@ class Engine:
 				self.highlight.last_x = self.highlight.x
 				self.highlight.last_y = self.highlight.y
 
+			# talk
+			elif keypressed == "t":
+
+				self.print_bottomf("You call out!...")
+				options = ["Hello!","Fuck you all!","Help!"]
+				i = 0
+				for option in options:
+					self.print_bottomf(str(i)+": "+options[i],offset=i+1)
+					i+=1
+
+				while True:
+					entry = keyboard.read_key()
+					try:
+						choice = int(entry)
+						if choice in range(0,len(options),1):
+							break
+					except:
+						pass
+
+				self.print_overhead_time(self.player,options[choice],wait=1)
+
+				#self.mode ="listen"
+				i = 0
+				for ai in self.world.ais:
+					if self.in_hearing_range(ai,self.player) and self.in_hearing_range(self.player,ai):
+						self.print_overhead_time(ai,ai.respond(options[choice]),wait=3)
+						i+=1
+				self.clear_text_box()
+
+
+
 			#testing for visibility :
 			elif keypressed =="space":
 				self.transfer_object(0,self.world,self.player,(12,12))
 
+			# quit game
 			elif keypressed == "esc":
+				if self.log:
+					self.errorfile.write("player quit.\n")
 				os.system('cls' if os.name == 'nt' else 'clear')
 				quit()
+
 
 		elif self.mode =="look":
 
@@ -156,6 +212,8 @@ class Engine:
 
 
 			elif keypressed == "esc":
+				if self.log:
+					self.errorfile.write("look mode ended\n")
 				self.last_vis[self.highlight.y,self.highlight.x]=-1
 				self.mode="explore"
 
@@ -172,6 +230,13 @@ class Engine:
 		obj.y = loc[1]
 		receiver.gain(obj)
 
+	# test if two beings are within hearing range of eachother
+	def in_hearing_range(self,person_a,person_b):
+		distance = math.sqrt((person_a.x -person_b.x)**2 + (person_a.y -person_b.y)**2 )
+		if distance < person_a.hearing:
+			return True
+		else:
+			return False
 
 
 
@@ -185,6 +250,10 @@ class Engine:
 				with self.t.location(y=self.player.last_y,x=self.player.last_x):
 					print(self.t.on_green(" "))
 				print(self.t.home)#+self.t.on_darkgreen)#self.t.clear_eos)
+
+			for ai in self.world.ais:
+				if ai.x != ai.last_x or ai.y!=ai.last_y:
+					self.last_vis[ai.last_y,ai.last_x]-=1
 
 			if self.mode =="look":
 				with self.t.location(y=self.highlight.last_y,x=self.highlight.last_x):
@@ -202,10 +271,10 @@ class Engine:
 
 		if self.mode =="explore":
 
+			# set up array to show what has changed in view
 			current_vis = np.zeros((self.y,self.x))
 
-			self.print_bottomf(self.whole_screen_refresh)
-
+			# make of record of what can currently be seen
 			for i in range(0,self.x):
 				for j in range(0,self.y):
 					canSee =self.inFOV(self.player,j,i)
@@ -213,18 +282,25 @@ class Engine:
 						self.world.explored[j,i]=True
 						current_vis[j,i]=1
 
+			# add position of ais
 			for ai in self.world.ais:
 				if ai.x != ai.last_x or ai.y!=ai.last_y:
 					current_vis[ai.y,ai.x]-=1
-					current_vis[ai.last_y,ai.last_x]-=1
+					#current_vis[ai.last_y,ai.last_x]-=1
 
-			changes = current_vis-self.last_vis
+			if self.ui.any() !=0:
+				current_vis -= self.ui
+
+
+			self.print_bottomf(self.whole_screen_refresh)
 
 			if self.whole_screen_refresh:
 
 				self.whole_screen_display()
 
 			else:
+
+				changes = current_vis-self.last_vis
 
 				self.display_ground(changes)
 
@@ -313,9 +389,11 @@ class Engine:
 
 	def whole_screen_display(self):
 
-		for i in range(0,self.x):
-			for j in range(0,self.y):
-				self.print_bottomf(i)
+		if self.log:
+			self.errorfile.write("refreshing whole screen\n")
+
+		for i in range(0,self.x-1):
+			for j in range(0,self.y-1):
 				canSee =self.inFOV(self.player,j,i)
 				if canSee:
 					with self.t.location(y=j,x=i):
@@ -343,16 +421,27 @@ class Engine:
 		keyboard.wait("enter")
 
 	def print_bottomf(self,text,offset=0):
-		#self.clear_text_box()
 		with self.t.location(0, self.t.height - self.textbox_height+offset):
 			print(text)
 
-	def print_bottom_time(self,text, time = 5):
+	def print_bottom_time(self,text, wait = 5):
 		self.clear_text_box()
 		with self.t.location(0, self.t.height - self.textbox_height):
 			print(text)
-			time.sleep(time)
+			time.sleep(wait)
 
 	def clear_text_box(self):
 		with self.t.location(0, self.t.height - self.textbox_height):
 			print(self.t.clear_eos)
+
+	def print_overhead_time(self,speaker,text,wait=5):
+
+		over_pos_x = speaker.x
+		over_pos_y = speaker.y-1
+		with self.t.location(over_pos_x,over_pos_y):
+			print(text)
+			time.sleep(wait)
+		for i in range(0,len(text)):
+			self.ui[over_pos_y,over_pos_x+i]=-1
+		#with self.t.location(over_pos_x, over_pos_y):
+		#	print(" "*len(text))

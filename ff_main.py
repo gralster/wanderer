@@ -8,7 +8,7 @@ import time
 
 def initiate():
 
-	game = Engine("explore")
+	game = Engine("explore",True)
 	game.setup_world()
 	game.clear()
 	return(game)
@@ -18,8 +18,8 @@ def update(game):
 	game.display()
 	game.update_player()
 	game.update_ai()
+	time.sleep(0.015)
 	#time.sleep(0.15)
-
 
 game = initiate()
 while True:
