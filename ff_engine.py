@@ -8,6 +8,7 @@ import time
 from blessed import Terminal
 import numpy as np
 
+
 from ff_Map import Map
 from ff_Player import Player
 from ff_Object import Object
@@ -33,9 +34,11 @@ class Engine:
 		self.world = Map(self.player,self.x,self.y)
 		self.highlight = Selector(None,None)
 
-		self.last_vis = np.zeros((self.y,self.x))
+
+		self.setup_disp() # just for debugging, delete later
+		self.last_vis = np.zeros((int(self.world.height/4),self.world.width))
 		self.whole_screen_refresh=False
-		self.ui = np.zeros((self.y,self.x))
+		self.ui = np.zeros((int(self.world.height/4),self.world.width))
 
 		self.log = log
 		if log:
@@ -44,6 +47,7 @@ class Engine:
 
 	def setup_world(self):
 		self.world.gen_features()
+		self.world.place_player(self.player)
 
 	### UPDATING #######################################
 
@@ -252,8 +256,10 @@ class Engine:
 				print(self.t.home)#+self.t.on_darkgreen)#self.t.clear_eos)
 
 			for ai in self.world.ais:
-				if ai.x != ai.last_x or ai.y!=ai.last_y:
-					self.last_vis[ai.last_y,ai.last_x]-=1
+				canSee =self.inFOV(self.player,ai.y,ai.x)
+				if canSee:
+					if ai.x != ai.last_x or ai.y!=ai.last_y:
+						self.last_vis[ai.last_y,ai.last_x]-=1
 
 			if self.mode =="look":
 				with self.t.location(y=self.highlight.last_y,x=self.highlight.last_x):
@@ -267,16 +273,31 @@ class Engine:
 						print(self.t.on_black(" "))
 				print(self.t.home)
 
+	def setup_disp(self):
+
+		#draw bounding box:
+
+		for i in range(0,int(self.world.width)):
+			with self.t.location(y=0,x=i):
+				print(self.t.on_red(" "))
+			with self.t.location(y=int(self.world.height/4)-1,x=i):
+				print(self.t.on_red(" "))
+		for j in range(0,int(self.world.height/4)):
+			with self.t.location(y=j,x=0):
+				print(self.t.on_red(" "))
+			with self.t.location(y=j,x=int(self.world.width)):
+				print(self.t.on_red(" "))
+
 	def display(self):
 
 		if self.mode =="explore":
 
 			# set up array to show what has changed in view
-			current_vis = np.zeros((self.y,self.x))
+			current_vis = np.zeros((int(self.world.height/4),self.world.width))
 
 			# make of record of what can currently be seen
-			for i in range(0,self.x):
-				for j in range(0,self.y):
+			for i in range(0,self.world.width):
+				for j in range(0,int(self.world.height/4)):
 					canSee =self.inFOV(self.player,j,i)
 					if canSee:
 						self.world.explored[j,i]=True
@@ -285,7 +306,7 @@ class Engine:
 			# add position of ais
 			for ai in self.world.ais:
 				if ai.x != ai.last_x or ai.y!=ai.last_y:
-					current_vis[ai.y,ai.x]-=1
+					current_vis[ai.y,ai.x]=1
 					#current_vis[ai.last_y,ai.last_x]-=1
 
 			if self.ui.any() !=0:
@@ -311,6 +332,8 @@ class Engine:
 			# update display of player
 			with self.t.location(y=self.player.y,x=self.player.x):
 				print(self.t.on_green+self.t.bold(self.player.symbol))
+
+
 
 			# reset last seen array
 			# - must be last thing in display function
@@ -356,8 +379,8 @@ class Engine:
 		return(True)
 
 	def display_ground(self,changes):
-		for i in range(0,self.x):
-			for j in range(0,self.y):
+		for i in range(0,self.world.width):
+			for j in range(0,int(self.world.height/4)):
 				canSee =self.inFOV(self.player,j,i)
 				if canSee:
 					if changes[j,i]>=1:
