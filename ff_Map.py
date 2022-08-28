@@ -9,24 +9,28 @@ import matplotlib.pyplot as plt
 class Map:
 
 	def __init__(self,player,y,x):
-		self.width = x*2	# *2 makes move map function work without crashing, but why??
-		self.height = y*2
+		self.width = x
+		self.height = y
 		print(" ")
-		print("	terminal width = "+str(self.width))
-		print("	terminal height = "+str(self.height))
+		print("	map width = "+str(self.width))
+		print("	map height = "+str(self.height))
+
+		# screen relative position within map
+		self.tl_y = 20
+		self.tl_x = 20
 
 		self.player = player
 		self.objects = list()
 		self.ais = list()
 
-		self.tiles = np.ndarray((int(y/2),x*2),dtype=np.object)
-		self.explored = np.ndarray((int(y/2),x*2),dtype=np.object)
+		self.tiles = np.ndarray((y,x),dtype=np.object)
+		self.explored = np.ndarray((y,x),dtype=np.object)
 		self.explored.fill(False)
 
 	def gen_features(self):
 
 		map_width=self.width
-		map_height = int(self.height/4)
+		map_height = int(self.height)
 
 		#replace with own eventually, this is not random
 		noise = PerlinNoise(octaves=10)
@@ -43,10 +47,10 @@ class Map:
 		plt.show()
 
 
-		pot = Object(12,12,"Pot","P","A pot for cooking")
+		pot = Object(30,30,"Pot","P","A pot for cooking")
 		self.gain(pot)
 
-		Maximilian = AI("Maximilian","M",16,18,"a raven")
+		Maximilian = AI("Maximilian","M",30,30,"a raven")
 		self.populate(Maximilian)
 
 		for i in range(0,map_width):
@@ -63,13 +67,11 @@ class Map:
 		self.tiles[11,11] = Wall(5)
 
 	def place_player(self,player):
-		for i in range(15,self.width-15):
-			for j in range(15,int(self.height/4)-15):
+		for i in range(15,self.width-270):
+			for j in range(15,self.height-270):
 				if self.tiles[j,i].can_walk:
 					player.x = i
 					player.y = j
-
-
 
 	def gain(self,obj):
 		self.objects.append(obj)
@@ -93,81 +95,85 @@ class Map:
 		else:
 			return(at_loc)
 
-	def player_near_edge(self):
-		if self.width-self.player.x <5 or (self.height)/4-self.player.y <5 or self.player.x <5 or self.player.y <5 :
-			return True
-		else:
-			 return False
+
 
 	def move_map(self,keypressed):
 
 		if keypressed =="up":
-			newline = np.ndarray((self.player.speed,self.width),dtype=np.object)
-			newexplored = np.ndarray((self.player.speed,self.width),dtype=np.object)
+			#newline = np.ndarray((self.player.speed,self.width),dtype=np.object)
+			#newexplored = np.ndarray((self.player.speed,self.width),dtype=np.object)
 
-			for x in range(0,self.width):
-				newline[0,x]=Empty()
-				newexplored[0,x] = False
+			# for x in range(0,self.width):
+			# 	newline[0,x]=Empty()
+			# 	newexplored[0,x] = False
+			#
+			# self.tiles = np.vstack((newline,self.tiles))
+			# self.tiles = np.delete(self.tiles,np.s_[self.height-self.player.speed+1:self.height+1],0)
+			#
+			# self.explored = np.vstack((newexplored,self.explored ))
+			# self.explored  = np.delete(self.explored,np.s_[self.height-self.player.speed+1:self.height+1],0)
 
-			self.tiles = np.vstack((newline,self.tiles))
-			self.tiles = np.delete(self.tiles,np.s_[self.height-self.player.speed+1:self.height+1],0)
+			#for obj in self.objects:
+			#	obj.y+=1
 
-			self.explored = np.vstack((newexplored,self.explored ))
-			self.explored  = np.delete(self.explored,np.s_[self.height-self.player.speed+1:self.height+1],0)
-
-			for obj in self.objects:
-				obj.y+=1
+			self.tl_y -= 1
 
 		elif keypressed =="down":
-			newline = np.ndarray((self.player.speed,self.width),dtype=np.object)
-			newexplored = np.ndarray((self.player.speed,self.width),dtype=np.object)
+			# newline = np.ndarray((self.player.speed,self.width),dtype=np.object)
+			# newexplored = np.ndarray((self.player.speed,self.width),dtype=np.object)
+			#
+			# for x in range(0,self.width):
+			# 	newline[0,x]=Empty()
+			# 	newexplored[0,x] = False
+			#
+			# self.tiles = np.vstack((self.tiles,newline))
+			# self.tiles = np.delete(self.tiles,np.s_[0:self.player.speed],0)
+			#
+			# self.explored = np.vstack((self.explored,newexplored))
+			# self.explored = np.delete(self.explored,np.s_[0:self.player.speed],0)
 
-			for x in range(0,self.width):
-				newline[0,x]=Empty()
-				newexplored[0,x] = False
+			#for obj in self.objects:
+			#	obj.y-=1
 
-			self.tiles = np.vstack((self.tiles,newline))
-			self.tiles = np.delete(self.tiles,np.s_[0:self.player.speed],0)
-
-			self.explored = np.vstack((self.explored,newexplored))
-			self.explored = np.delete(self.explored,np.s_[0:self.player.speed],0)
-
-			for obj in self.objects:
-				obj.y-=1
+			self.tl_y +=1
 
 		elif keypressed =="left":
-			newline = np.ndarray((self.height,self.player.speed),dtype=np.object)
-			newexplored = np.ndarray((self.height,self.player.speed),dtype=np.object)
+			# newline = np.ndarray((self.height,self.player.speed),dtype=np.object)
+			# newexplored = np.ndarray((self.height,self.player.speed),dtype=np.object)
+			#
+			# for x in range(0,self.height):
+			# 	newline[x,0]=Empty()
+			# 	newexplored[x,0] = False
+			#
+			# self.tiles = np.hstack((newline,self.tiles))
+			# self.tiles = np.delete(self.tiles,np.s_[self.width-self.player.speed+1:self.width+1],1)
+			#
+			# self.explored = np.hstack((newexplored,self.explored))
+			# self.explored = np.delete(self.explored,np.s_[self.width-self.player.speed+1:self.width+1],1)
 
-			for x in range(0,self.height):
-				newline[x,0]=Empty()
-				newexplored[x,0] = False
+			#for obj in self.objects:
+			#	obj.x+=1
 
-			self.tiles = np.hstack((newline,self.tiles))
-			self.tiles = np.delete(self.tiles,np.s_[self.width-self.player.speed+1:self.width+1],1)
-
-			self.explored = np.hstack((newexplored,self.explored))
-			self.explored = np.delete(self.explored,np.s_[self.width-self.player.speed+1:self.width+1],1)
-
-			for obj in self.objects:
-				obj.x+=1
+			self.tl_x -=1
 
 		elif keypressed =="right":
-			newline = np.ndarray((self.height,self.player.speed),dtype=np.object)
-			newexplored = np.ndarray((self.height,self.player.speed),dtype=np.object)
+			# newline = np.ndarray((self.height,self.player.speed),dtype=np.object)
+			# newexplored = np.ndarray((self.height,self.player.speed),dtype=np.object)
+			#
+			# for x in range(0,self.height):
+			# 	newline[x,0]=Empty()
+			# 	newexplored[x,0] = False
+			#
+			# self.tiles = np.hstack((self.tiles,newline))
+			# self.tiles = np.delete(self.tiles,np.s_[0:self.player.speed],1)
+			#
+			# self.explored = np.hstack((self.explored,newexplored))
+			# self.explored = np.delete(self.explored,np.s_[0:self.player.speed],1)
 
-			for x in range(0,self.height):
-				newline[x,0]=Empty()
-				newexplored[x,0] = False
+			#for obj in self.objects:
+			#	obj.x-=1
 
-			self.tiles = np.hstack((self.tiles,newline))
-			self.tiles = np.delete(self.tiles,np.s_[0:self.player.speed],1)
-
-			self.explored = np.hstack((self.explored,newexplored))
-			self.explored = np.delete(self.explored,np.s_[0:self.player.speed],1)
-
-			for obj in self.objects:
-				obj.x-=1
+			self.tl_x+=1
 
 
 	def isSeeThrough(self,y,x):

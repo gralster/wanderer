@@ -27,27 +27,42 @@ class Engine:
 		self.mode = mode
 		self.t = Terminal()
 
+		print(" ")
+		print("	terminal width = "+str(self.t.width))
+		print("	terminal height = "+str(self.t.height))
+		time.sleep(2)
+
 		self.textbox_height = 8
-		self.x = self.t.width
-		self.y = self.t.height-self.textbox_height
+		self.update_screen()
 		self.player = Player("grace",5,5)
-		self.world = Map(self.player,self.x,self.y)
+		self.world = Map(self.player,300,300)
+
 		self.highlight = Selector(None,None)
 
-
-		self.setup_disp() # just for debugging, delete later
-		self.last_vis = np.zeros((int(self.world.height/4),self.world.width))
+		self.setup_disp()
+		self.last_vis = np.zeros((self.screen_height,self.screen_width))
 		self.whole_screen_refresh=False
-		self.ui = np.zeros((int(self.world.height/4),self.world.width))
+		self.ui = np.zeros((self.screen_height,self.screen_width))
 
 		self.log = log
 		if log:
 			os.remove('log.txt')
 			self.errorfile =  open('log.txt', 'a')
 
+	def update_screen(self):
+		self.x = self.t.width
+		self.y = self.t.height-self.textbox_height
+
 	def setup_world(self):
 		self.world.gen_features()
 		self.world.place_player(self.player)
+
+	def player_near_edge(self):
+		tolerance =2
+		if self.screen_width-(self.player.x-self.world.tl_x) <tolerance or self.screen_height-(self.player.y-self.world.tl_y) <tolerance or (self.player.x-self.world.tl_x)<tolerance or (self.player.y-self.world.tl_y) <tolerance :
+			return True
+		else:
+			 return False
 
 	### UPDATING #######################################
 
@@ -75,7 +90,7 @@ class Engine:
 				if self.world.tiles[self.player.y,self.player.x+self.player.speed].can_walk:
 					self.player.x += self.player.speed
 
-			if self.world.player_near_edge():
+			if self.player_near_edge():
 				if self.log:
 					self.errorfile.write("pushing edge of map\n")
 				self.player.y = self.player.last_y
@@ -83,19 +98,20 @@ class Engine:
 				self.world.move_map(keypressed)
 				self.whole_screen_refresh=True
 
-
+				self.print_bottomf(self.world.tl_x,offset=1)
+				self.print_bottomf(self.world.tl_y,offset=2)
 
 
 			# actions
 
 			# pick up
 			elif keypressed ==".":
-				obj_indexes =self.world.get_at_location(self.player.y,self.player.x)
+				obj_indexes =self.world.get_at_location(self.player.y+self.world.tl_y,self.player.x+self.world.tl_x)
 				if obj_indexes==[]:
 					self.print_bottom("nothing to pick up")
 				else:
 					for index in obj_indexes:
-						self.transfer_object(index,self.world,self.player,(self.player.x,self.player.y))
+						self.transfer_object(index,self.world,self.player,(self.player.x+self.world.tl_x,self.player.y+self.world.tl_y))
 
 			#drop
 			elif keypressed == ",":
@@ -107,7 +123,7 @@ class Engine:
 					self.print_bottom("What do you want to drop? (0,1,2,...")
 
 					selection = int(input()[-1])
-					self.transfer_object(selection,self.player,self.world,(self.player.x,self.player.y))
+					self.transfer_object(selection,self.player,self.world,(self.player.x+self.world.tl_x,self.player.y+self.world.tl_y))
 
 			# see inventory
 			elif keypressed == "i":
@@ -121,11 +137,11 @@ class Engine:
 
 				self.print_bottomf("You look around...")
 				self.mode ="look"
-				self.highlight.x = self.player.x
-				self.highlight.y = self.player.y
+				self.highlight.i = self.player.x-self.world.tl_x
+				self.highlight.j = self.player.y-self.world.tl_y
 
-				self.highlight.last_x = self.highlight.x
-				self.highlight.last_y = self.highlight.y
+				self.highlight.last_i = self.highlight.i
+				self.highlight.last_j = self.highlight.j
 
 			# talk
 			elif keypressed == "t":
@@ -172,30 +188,30 @@ class Engine:
 
 		elif self.mode =="look":
 
-			self.highlight.last_x = self.highlight.x
-			self.highlight.last_y = self.highlight.y
+			self.highlight.last_i = self.highlight.i
+			self.highlight.last_j = self.highlight.j
 
 			keypressed = keyboard.read_key()
 
 			if keypressed =="up":
-				self.highlight.y-=1
+				self.highlight.j-=1
 			elif keypressed =="down":
-				self.highlight.y+=1
+				self.highlight.j+=1
 			elif keypressed =="left":
-				self.highlight.x-=1
+				self.highlight.i-=1
 			elif keypressed =="right":
-				self.highlight.x+=1
+				self.highlight.i+=1
 
 			elif keypressed =="enter":
 
-				if self.world.explored[self.highlight.y,self.highlight.x]==False:
+				if self.world.explored[self.highlight.j,self.highlight.i]==False:
 					self.print_bottomf("You don't know what's over there.")
 
 				something_there = False
 
 				for obj in self.world.objects:
-					if self.highlight.x == obj.x and self.highlight.y == obj.y:
-						canSee =self.inFOV(self.player,self.highlight.y,self.highlight.x)
+					if self.highlight.i+self.world.tl_x == obj.x and self.highlight.j +self.world.tl_y== obj.y:
+						canSee =self.inFOV(self.player,self.highlight.j+self.world.tl_y,self.highlight.i+self.world.tl_x)
 						if canSee:
 							self.print_bottomf(obj.desc)
 						else:
@@ -203,8 +219,8 @@ class Engine:
 						something_there = True
 
 				for ai in self.world.ais:
-					if self.highlight.x == ai.x and self.highlight.y == ai.y:
-						canSee =self.inFOV(self.player,self.highlight.y,self.highlight.x)
+					if self.highlight.i +self.world.tl_x == ai.x and self.highlight.j+self.world.tl_y == ai.y:
+						canSee =self.inFOV(self.player,self.highlight.j+self.world.tl_y,self.highlight.i+self.world.tl_x)
 						if canSee:
 							self.print_bottomf(ai.desc)
 						else:
@@ -212,13 +228,13 @@ class Engine:
 						something_there = True
 
 				if something_there == False:
-					self.print_bottomf(self.world.tiles[self.highlight.y,self.highlight.x].desc)
+					self.print_bottomf(self.world.tiles[self.highlight.j,self.highlight.i].desc)
 
 
 			elif keypressed == "esc":
 				if self.log:
 					self.errorfile.write("look mode ended\n")
-				self.last_vis[self.highlight.y,self.highlight.x]=-1
+				self.last_vis[self.highlight.j,self.highlight.i]=-1
 				self.mode="explore"
 
 
@@ -251,20 +267,20 @@ class Engine:
 		with self.t.hidden_cursor():
 
 			if self.mode =="explore":
-				with self.t.location(y=self.player.last_y,x=self.player.last_x):
+				with self.t.location(y=self.player.last_y-self.world.tl_y,x=self.player.last_x-self.world.tl_x):
 					print(self.t.on_green(" "))
 				print(self.t.home)#+self.t.on_darkgreen)#self.t.clear_eos)
 
 			for ai in self.world.ais:
 				canSee =self.inFOV(self.player,ai.y,ai.x)
 				if canSee:
-					if ai.x != ai.last_x or ai.y!=ai.last_y:
-						self.last_vis[ai.last_y,ai.last_x]-=1
+					if(( ai.x-self.world.tl_x )!=( ai.last_x-self.world.tl_x)) or ((ai.y-self.world.tl_y)!=(ai.last_y-self.world.tl_y)):
+						self.last_vis[ai.last_y-self.world.tl_y,ai.last_x-self.world.tl_x]-=1
 
 			if self.mode =="look":
-				with self.t.location(y=self.highlight.last_y,x=self.highlight.last_x):
-					if self.world.explored[self.highlight.last_y,self.highlight.last_x]:
-						canSee =self.inFOV(self.player,self.highlight.last_y,self.highlight.last_x)
+				with self.t.location(y=self.highlight.last_j,x=self.highlight.last_i):
+					if self.world.explored[self.highlight.last_j,self.highlight.last_i]:
+						canSee =self.inFOV(self.player,self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x)
 						if canSee:
 							print(self.t.on_green(" "))
 						else:
@@ -275,17 +291,21 @@ class Engine:
 
 	def setup_disp(self):
 
+		self.screen_width = self.t.width
+		self.screen_height = self.t.height-self.textbox_height
+
+
 		#draw bounding box:
 
-		for i in range(0,int(self.world.width)):
+		for i in range(0,int(self.screen_width)):
 			with self.t.location(y=0,x=i):
 				print(self.t.on_red(" "))
-			with self.t.location(y=int(self.world.height/4)-1,x=i):
+			with self.t.location(y=self.screen_height-1,x=i):
 				print(self.t.on_red(" "))
-		for j in range(0,int(self.world.height/4)):
+		for j in range(0,self.screen_height):
 			with self.t.location(y=j,x=0):
 				print(self.t.on_red(" "))
-			with self.t.location(y=j,x=int(self.world.width)):
+			with self.t.location(y=j,x=int(self.screen_width)):
 				print(self.t.on_red(" "))
 
 	def display(self):
@@ -293,27 +313,31 @@ class Engine:
 		if self.mode =="explore":
 
 			# set up array to show what has changed in view
-			current_vis = np.zeros((int(self.world.height/4),self.world.width))
+			current_vis = np.zeros((self.screen_height,self.screen_width))
 
 			# make of record of what can currently be seen
-			for i in range(0,self.world.width):
-				for j in range(0,int(self.world.height/4)):
-					canSee =self.inFOV(self.player,j,i)
+			for i in range(0,self.screen_width):
+				for j in range(0,self.screen_height):
+					canSee =self.inFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
 					if canSee:
-						self.world.explored[j,i]=True
+						self.world.explored[j+self.world.tl_y,i+self.world.tl_x]=True
 						current_vis[j,i]=1
 
 			# add position of ais
 			for ai in self.world.ais:
-				if ai.x != ai.last_x or ai.y!=ai.last_y:
+
+				canSee =self.inFOV(self.player,ai.y,ai.x)
+
+				if ( ai.x-self.world.tl_x != ai.last_x-self.world.tl_x or ai.y-self.world.tl_y!=ai.last_y-self.world.tl_y) and canSee:
 					current_vis[ai.y,ai.x]=1
 					#current_vis[ai.last_y,ai.last_x]-=1
 
 			if self.ui.any() !=0:
 				current_vis -= self.ui
+				self.whole_screen_refresh=True
+				self.ui = np.zeros((self.screen_height,self.screen_width))
 
-
-			self.print_bottomf(self.whole_screen_refresh)
+			#self.print_bottomf(self.whole_screen_refresh)
 
 			if self.whole_screen_refresh:
 
@@ -322,40 +346,33 @@ class Engine:
 			else:
 
 				changes = current_vis-self.last_vis
-
 				self.display_ground(changes)
-
 				self.display_objects(changes)
-
 				self.display_ai(changes)
 
 			# update display of player
-			with self.t.location(y=self.player.y,x=self.player.x):
+			with self.t.location(y=self.player.y-self.world.tl_y,x=self.player.x-self.world.tl_x):
 				print(self.t.on_green+self.t.bold(self.player.symbol))
-
-
 
 			# reset last seen array
 			# - must be last thing in display function
-
 			self.last_vis = current_vis
-			self.whole_screen_refresh=False
 
 		elif self.mode =="look":
 
 			self.whole_screen_display()
 
-			canSee =self.inFOV(self.player,self.highlight.y,self.highlight.x)
-			with self.t.location(y=self.highlight.y,x=self.highlight.x):
+			canSee =self.inFOV(self.player,self.highlight.j+self.world.tl_y,self.highlight.i+self.world.tl_x)
+			with self.t.location(y=self.highlight.j,x=self.highlight.i):
 				if canSee:
 					print(self.t.on_green(self.highlight.symbol))
 				else:
 					print(self.t.on_darkseagreen4(self.highlight.symbol))
 
-	def inFOV(self,player,j,i):
+	def inFOV(self,player,y,x):
 
-		di = i-player.x
-		dj = j-player.y
+		di = x-player.x
+		dj = y-player.y
 		distance = math.sqrt(di**2+ dj**2)
 
 		if  di == 0 and dj == 0:
@@ -367,47 +384,56 @@ class Engine:
 			l=0
 			while l < 1:
 
-				tilei = math.floor(player.x +l*di)
-				tilej = math.floor(player.y +l*dj)
+				tilex = math.ceil(player.x +l*di)
+				tiley = math.ceil(player.y +l*dj)
 
-				obstacle = self.world.tiles[tilej,tilei].opaque
-				isself = (tilej==i and tilei==j)
+				obstacle = self.world.tiles[tiley,tilex].opaque
+				isself = (tiley==x and tilex==y)
+
 				if obstacle and not isself:
 					return(False)
 				l+=distance/500
 			return(True)
 		return(True)
 
+	def is_on_screen(self,thing):
+		if (thing.x < self.world.tl_x+self.screen_width and thing.x >self.world.tl_x ) and (thing.y< self.world.tl_y+self.screen_height and thing.y >self.world.tl_y):
+			return True
+		else:
+			return False
+
 	def display_ground(self,changes):
-		for i in range(0,self.world.width):
-			for j in range(0,int(self.world.height/4)):
-				canSee =self.inFOV(self.player,j,i)
+		for i in range(0,self.screen_width):
+			for j in range(0,self.screen_height):
+
+				canSee =self.inFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
 				if canSee:
 					if changes[j,i]>=1:
 						with self.t.location(y=j,x=i):
-							print(self.t.on_green(self.world.tiles[j,i].symbol))
+							print(self.t.on_green(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
 
 				if changes[j,i] ==-1:
 					with self.t.location(y=j,x=i):
-						print(self.t.on_darkseagreen4(self.world.tiles[j,i].symbol))
+						print(self.t.on_darkseagreen4(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
 
 	def display_objects(self,changes):
 
 		for obj in self.world.objects:
 			canSee =self.inFOV(self.player,obj.y,obj.x)
-			with self.t.location(y=obj.y,x=obj.x):
+			self.print_bottomf(canSee)
+			with self.t.location(y=obj.y-self.world.tl_y,x=obj.x-self.world.tl_x):
 				if canSee:
 					print(self.t.red_on_green(obj.symbol))
-				if changes[obj.y,obj.x] ==-1:
+				if changes[obj.y-self.world.tl_y,obj.x-self.world.tl_x] ==-1:
 					print(self.t.red_on_darkseagreen4(obj.symbol))
 
 	def display_ai(self,changes):
 		for ai in self.world.ais:
 			canSee =self.inFOV(self.player,ai.y,ai.x)
-			with self.t.location(y=ai.y,x=ai.x):
+			with self.t.location(y=ai.y-self.world.tl_y,x=ai.x-self.world.tl_x):
 				if canSee:
 					print(self.t.black_on_green(ai.symbol))
-				if changes[ai.y,ai.x] ==-1:
+				elif changes[ai.y-self.world.tl_y,ai.x-self.world.tl_x] ==-1:
 					print(self.t.black_on_darkseagreen4(ai.symbol))
 
 	def whole_screen_display(self):
@@ -415,25 +441,28 @@ class Engine:
 		if self.log:
 			self.errorfile.write("refreshing whole screen\n")
 
-		for i in range(0,self.x-1):
-			for j in range(0,self.y-1):
-				canSee =self.inFOV(self.player,j,i)
+		for i in range(0,self.screen_width):
+			for j in range(0,self.screen_height):
+				canSee =self.inFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
 				if canSee:
 					with self.t.location(y=j,x=i):
-						print(self.t.on_green(self.world.tiles[j,i].symbol))
+						print(self.t.on_green(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
 				else:
-					if self.world.explored[j,i]:
+					if self.world.explored[j+self.world.tl_y,i+self.world.tl_x]:
 						with self.t.location(y=j,x=i):
-							print(self.t.on_darkseagreen4(self.world.tiles[j,i].symbol))
+							print(self.t.on_darkseagreen4(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
 
 		for obj in self.world.objects:
 			canSee =self.inFOV(self.player,obj.y,obj.x)
-			with self.t.location(y=obj.y,x=obj.x):
+			self.print_bottomf(canSee)
+			with self.t.location(y=obj.y-self.world.tl_y,x=obj.x-self.world.tl_x):
 				if canSee:
 					print(self.t.red_on_green(obj.symbol))
 				else:
 					if self.world.explored[obj.y,obj.x]:
 						print(self.t.red_on_darkseagreen4(obj.symbol))
+
+		self.whole_screen_refresh=False
 
 	### DISPLAY TEXT ##############################################
 
@@ -459,12 +488,12 @@ class Engine:
 
 	def print_overhead_time(self,speaker,text,wait=5):
 
-		over_pos_x = speaker.x
-		over_pos_y = speaker.y-1
-		with self.t.location(over_pos_x,over_pos_y):
+		over_pos_i = speaker.x-self.world.tl_x
+		over_pos_j = speaker.y-1-self.world.tl_y
+		with self.t.location(over_pos_i,over_pos_j):
 			print(text)
 			time.sleep(wait)
 		for i in range(0,len(text)):
-			self.ui[over_pos_y,over_pos_x+i]=-1
-		#with self.t.location(over_pos_x, over_pos_y):
+			self.ui[over_pos_j,over_pos_i+i]=-1
+		#with self.t.location(over_pos_i, over_pos_j):
 		#	print(" "*len(text))

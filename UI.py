@@ -1,9 +1,9 @@
 class Selector:
 
-    def __init__(self,y,x):
-        self.y = y
-        self.x = x
+    def __init__(self,j,i):
+        self.j = j
+        self.i = i
         self.symbol = "O"
 
-        self.last_y = y
-        self.last_x = x
+        self.last_j = j
+        self.last_i = i
