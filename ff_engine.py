@@ -329,7 +329,7 @@ class Engine:
 				canSee =self.inFOV(self.player,ai.y,ai.x)
 
 				if ( ai.x-self.world.tl_x != ai.last_x-self.world.tl_x or ai.y-self.world.tl_y!=ai.last_y-self.world.tl_y) and canSee:
-					current_vis[ai.y,ai.x]=1
+					current_vis[ai.y-self.world.tl_y,ai.x-self.world.tl_x]=1
 					#current_vis[ai.last_y,ai.last_x]-=1
 
 			if self.ui.any() !=0:
