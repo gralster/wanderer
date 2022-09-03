@@ -143,6 +143,8 @@ class Engine:
 				self.highlight.last_i = self.highlight.i
 				self.highlight.last_j = self.highlight.j
 
+				self.ui[self.highlight.last_j,self.highlight.last_i]+=1
+
 			# talk
 			elif keypressed == "t":
 
@@ -172,8 +174,6 @@ class Engine:
 						i+=1
 				self.clear_text_box()
 
-
-
 			#testing for visibility :
 			elif keypressed =="space":
 				self.transfer_object(0,self.world,self.player,(12,12))
@@ -187,7 +187,7 @@ class Engine:
 
 
 		elif self.mode =="look":
-
+			time.sleep(0.15)
 			self.highlight.last_i = self.highlight.i
 			self.highlight.last_j = self.highlight.j
 
@@ -237,11 +237,9 @@ class Engine:
 				self.last_vis[self.highlight.j,self.highlight.i]=-1
 				self.mode="explore"
 
-
 	def update_ai(self):
 		for ai in self.world.ais:
 			ai.update()
-
 
 	def transfer_object(self,index,giver,receiver,loc):
 		self.last_vis[loc[1],loc[0]]=-1
@@ -257,8 +255,6 @@ class Engine:
 			return True
 		else:
 			return False
-
-
 
 	### DISPLAY SCREEN ############################################
 
@@ -279,7 +275,7 @@ class Engine:
 
 			if self.mode =="look":
 				with self.t.location(y=self.highlight.last_j,x=self.highlight.last_i):
-					if self.world.explored[self.highlight.last_j,self.highlight.last_i]:
+					if self.world.explored[self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x]:
 						canSee =self.inFOV(self.player,self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x)
 						if canSee:
 							print(self.t.on_green(" "))
@@ -294,9 +290,7 @@ class Engine:
 		self.screen_width = self.t.width
 		self.screen_height = self.t.height-self.textbox_height
 
-
 		#draw bounding box:
-
 		for i in range(0,int(self.screen_width)):
 			with self.t.location(y=0,x=i):
 				print(self.t.on_red(" "))
@@ -334,17 +328,15 @@ class Engine:
 
 			if self.ui.any() !=0:
 				current_vis -= self.ui
-				self.whole_screen_refresh=True
+				#self.whole_screen_refresh=True
 				self.ui = np.zeros((self.screen_height,self.screen_width))
 
 			#self.print_bottomf(self.whole_screen_refresh)
 
 			if self.whole_screen_refresh:
-
 				self.whole_screen_display()
 
 			else:
-
 				changes = current_vis-self.last_vis
 				self.display_ground(changes)
 				self.display_objects(changes)
@@ -358,9 +350,8 @@ class Engine:
 			# - must be last thing in display function
 			self.last_vis = current_vis
 
-		elif self.mode =="look":
 
-			self.whole_screen_display()
+		elif self.mode =="look":
 
 			canSee =self.inFOV(self.player,self.highlight.j+self.world.tl_y,self.highlight.i+self.world.tl_x)
 			with self.t.location(y=self.highlight.j,x=self.highlight.i):
@@ -494,6 +485,6 @@ class Engine:
 			print(text)
 			time.sleep(wait)
 		for i in range(0,len(text)):
-			self.ui[over_pos_j,over_pos_i+i]=-1
+			self.ui[over_pos_j,over_pos_i+i]+=1
 		#with self.t.location(over_pos_i, over_pos_j):
 		#	print(" "*len(text))

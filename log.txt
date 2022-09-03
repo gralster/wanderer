@@ -1,7 +1,3 @@
-pushing edge of map
-refreshing whole screen
-pushing edge of map
-refreshing whole screen
-pushing edge of map
-refreshing whole screen
+look mode activated
+look mode ended
 player quit.
