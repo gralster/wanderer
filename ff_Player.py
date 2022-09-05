@@ -1,6 +1,6 @@
 
 class Player:
-	
+
 	def __init__(self,name,y,x):
 		self.name = name
 		self.x = x
@@ -8,7 +8,7 @@ class Player:
 		self.last_x = x
 		self.last_y = y
 		self.speed = 1
-		self.sight = 15
+		self.sight = 5
 		self.symbol = "x"
 		self.objects = list()
 		self.hearing = 10
@@ -25,8 +25,3 @@ class Player:
 		for obj in self.objects:
 			in_inv.append(obj.name)
 		return(in_inv)
-
-
-		
-		
-	

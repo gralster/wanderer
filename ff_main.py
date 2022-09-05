@@ -9,7 +9,7 @@ import time
 def initiate():
 
 	game = Engine("explore",True)
-	time.sleep(2)
+	time.sleep(0.5)
 	game.setup_world()
 	game.clear()
 	return(game)
@@ -20,7 +20,7 @@ def update(game):
 	game.update_player()
 	game.update_ai()
 	game.update_screen()
-	time.sleep(0.015)
+	time.sleep(0.005)
 
 	#time.sleep(0.15)
 

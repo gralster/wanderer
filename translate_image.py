@@ -41,12 +41,12 @@ def blowup(img,pixSize,new_size):
 
 	return blowup
 
-def main():
-	term = Terminal()
+def display(filename,term):
+
 
 	print(term.white_on_black(""))
 
-	img = Image.open('assets/test.jpg')
+	img = Image.open(filename)
 	img = np.array(img)
 	old_shape  = img.shape
 
@@ -57,8 +57,8 @@ def main():
 	print(img.shape[0])
 	print(img.shape[1])
 
-	img = blowup(img,pixSize,(img.shape[0],img.shape[1],3))
-	#img = blowup(img,pixSize,(39,58,3))
+	#img = blowup(img,pixSize,(img.shape[0],img.shape[1],3))
+	img = blowup(img,pixSize,(term.height-8,term.width,3))
 	#img = blowup(img,pixSize,old_shape)
 	print(img.shape)
 
@@ -66,15 +66,13 @@ def main():
 	fig = plt.figure()
 	plt.imshow(img)
 	i = Image.fromarray(img,mode="RGB")
-	i.show()
+	#i.show()
 	#quit()
 	print(img.shape)
 	#Terminal().on_color_rgb(*tuple((90,10,100)))
 	for i in range(img.shape[0]):
 		line = ''
-		for j in range(img.shape[1]-7):
+		for j in range(img.shape[1]):
 			#with Terminal().location(y=j,x=i):
 			line += term.on_color_rgb(int(img[i,j,0]),int(img[i,j,1]),int(img[i,j,2]))+' '
 		print(line)
-
-main()

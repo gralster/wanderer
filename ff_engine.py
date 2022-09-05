@@ -58,7 +58,7 @@ class Engine:
 		self.world.place_player(self.player)
 
 	def player_near_edge(self):
-		tolerance =2
+		tolerance =self.player.sight+1
 		if self.screen_width-(self.player.x-self.world.tl_x) <tolerance or self.screen_height-(self.player.y-self.world.tl_y) <tolerance or (self.player.x-self.world.tl_x)<tolerance or (self.player.y-self.world.tl_y) <tolerance :
 			return True
 		else:
@@ -96,7 +96,7 @@ class Engine:
 				self.player.y = self.player.last_y
 				self.player.x = self.player.last_x
 				self.world.move_map(keypressed)
-				self.whole_screen_refresh=True
+				#self.whole_screen_refresh=True
 
 				self.print_bottomf(self.world.tl_x,offset=1)
 				self.print_bottomf(self.world.tl_y,offset=2)
@@ -258,19 +258,24 @@ class Engine:
 
 	### DISPLAY SCREEN ############################################
 
+	#def add_rel(self,pos):
+	#	return pos +
+
+
 	def clear(self):
 
 		with self.t.hidden_cursor():
 
 			if self.mode =="explore":
-				with self.t.location(y=self.player.last_y-self.world.tl_y,x=self.player.last_x-self.world.tl_x):
-					print(self.t.on_green(" "))
-				print(self.t.home)#+self.t.on_darkgreen)#self.t.clear_eos)
+				if (self.player.last_y-self.world.last_tl_y !=  self.player.y-self.world.tl_y) or (self.player.last_x-self.world.last_tl_x !=  self.player.x-self.world.tl_x):
+					with self.t.location(y=self.player.last_y-self.world.tl_y,x=self.player.last_x-self.world.tl_x):
+						print(self.t.on_green(" "))
+					print(self.t.home)#+self.t.on_darkgreen)#self.t.clear_eos)
 
 			for ai in self.world.ais:
 				canSee =self.inFOV(self.player,ai.y,ai.x)
 				if canSee:
-					if(( ai.x-self.world.tl_x )!=( ai.last_x-self.world.tl_x)) or ((ai.y-self.world.tl_y)!=(ai.last_y-self.world.tl_y)):
+					if(( ai.x-self.world.tl_x )!=( ai.last_x-self.world.last_tl_x)) or ((ai.y-self.world.tl_y)!=(ai.last_y-self.world.last_tl_y)):
 						self.last_vis[ai.last_y-self.world.tl_y,ai.last_x-self.world.tl_x]-=1
 
 			if self.mode =="look":
@@ -322,7 +327,7 @@ class Engine:
 
 				canSee =self.inFOV(self.player,ai.y,ai.x)
 
-				if ( ai.x-self.world.tl_x != ai.last_x-self.world.tl_x or ai.y-self.world.tl_y!=ai.last_y-self.world.tl_y) and canSee:
+				if ( ai.x-self.world.tl_x != ai.last_x-self.world.last_tl_x or ai.y-self.world.tl_y!=ai.last_y-self.world.last_tl_y) and canSee:
 					current_vis[ai.y-self.world.tl_y,ai.x-self.world.tl_x]=1
 					#current_vis[ai.last_y,ai.last_x]-=1
 
@@ -399,13 +404,16 @@ class Engine:
 
 				canSee =self.inFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
 				if canSee:
-					if changes[j,i]>=1:
+					if self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol != self.world.tiles[j+self.world.last_tl_y,i+self.world.last_tl_x].symbol or changes[j,i]>=1:
 						with self.t.location(y=j,x=i):
 							print(self.t.on_green(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
-
-				if changes[j,i] ==-1:
-					with self.t.location(y=j,x=i):
-						print(self.t.on_darkseagreen4(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
+				else:
+					if (self.world.explored[j+self.world.tl_y,i+self.world.tl_x] and self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol != self.world.tiles[j+self.world.last_tl_y,i+self.world.last_tl_x].symbol)or(self.world.explored[j+self.world.tl_y,i+self.world.tl_x] != self.world.explored[j+self.world.last_tl_y,i+self.world.last_tl_x]) or changes[j,i]>=1 or changes[j,i] ==-1:
+						with self.t.location(y=j,x=i):
+							print(self.t.on_darkseagreen4(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
+					if (not self.world.explored[j+self.world.tl_y,i+self.world.tl_x] and self.world.explored[j+self.world.last_tl_y,i+self.world.last_tl_x]):
+						with self.t.location(y=j,x=i):
+							print(self.t.on_black(" "))
 
 	def display_objects(self,changes):
 
@@ -415,6 +423,13 @@ class Engine:
 			with self.t.location(y=obj.y-self.world.tl_y,x=obj.x-self.world.tl_x):
 				if canSee:
 					print(self.t.red_on_green(obj.symbol))
+					if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
+						with self.t.location(y=obj.y-self.world.last_tl_y,x=obj.x-self.world.last_tl_x):
+							print(self.t.red_on_green(" "))
+				else:
+					if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
+						with self.t.location(y=obj.y-self.world.last_tl_y,x=obj.x-self.world.last_tl_x):
+							print(self.t.red_on_darkseagreen4(" "))
 				if changes[obj.y-self.world.tl_y,obj.x-self.world.tl_x] ==-1:
 					print(self.t.red_on_darkseagreen4(obj.symbol))
 
@@ -424,36 +439,15 @@ class Engine:
 			with self.t.location(y=ai.y-self.world.tl_y,x=ai.x-self.world.tl_x):
 				if canSee:
 					print(self.t.black_on_green(ai.symbol))
-				elif changes[ai.y-self.world.tl_y,ai.x-self.world.tl_x] ==-1:
-					print(self.t.black_on_darkseagreen4(ai.symbol))
-
-	def whole_screen_display(self):
-
-		if self.log:
-			self.errorfile.write("refreshing whole screen\n")
-
-		for i in range(0,self.screen_width):
-			for j in range(0,self.screen_height):
-				canSee =self.inFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
-				if canSee:
-					with self.t.location(y=j,x=i):
-						print(self.t.on_green(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
+					if (ai.last_y-self.world.last_tl_y !=  ai.y-self.world.tl_y) or (ai.last_x-self.world.last_tl_x !=  ai.x-self.world.tl_x):
+						with self.t.location(y=ai.y-self.world.last_tl_y,x=ai.x-self.world.last_tl_x):
+							print(self.t.red_on_green(" "))
 				else:
-					if self.world.explored[j+self.world.tl_y,i+self.world.tl_x]:
-						with self.t.location(y=j,x=i):
-							print(self.t.on_darkseagreen4(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
-
-		for obj in self.world.objects:
-			canSee =self.inFOV(self.player,obj.y,obj.x)
-			self.print_bottomf(canSee)
-			with self.t.location(y=obj.y-self.world.tl_y,x=obj.x-self.world.tl_x):
-				if canSee:
-					print(self.t.red_on_green(obj.symbol))
-				else:
-					if self.world.explored[obj.y,obj.x]:
-						print(self.t.red_on_darkseagreen4(obj.symbol))
-
-		self.whole_screen_refresh=False
+					if (ai.last_y-self.world.last_tl_y !=  ai.y-self.world.tl_y) or (ai.last_x-self.world.last_tl_x !=  ai.x-self.world.tl_x):
+						with self.t.location(y=ai.y-self.world.last_tl_y,x=ai.x-self.world.last_tl_x):
+							print(self.t.red_on_darkseagreen4(" "))
+					if changes[ai.y-self.world.tl_y,ai.x-self.world.tl_x] ==-1:
+						print(self.t.black_on_darkseagreen4(ai.symbol))
 
 	### DISPLAY TEXT ##############################################
 
