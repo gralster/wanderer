@@ -7,7 +7,7 @@ import sys
 import time
 from blessed import Terminal
 import numpy as np
-
+import re
 
 from ff_Map import Map
 from ff_Player import Player
@@ -106,12 +106,12 @@ class Engine:
 
 			# pick up
 			elif keypressed ==".":
-				obj_indexes =self.world.get_at_location(self.player.y+self.world.tl_y,self.player.x+self.world.tl_x)
+				obj_indexes =self.world.get_at_location(self.player.y,self.player.x)
 				if obj_indexes==[]:
 					self.print_bottom("nothing to pick up")
 				else:
 					for index in obj_indexes:
-						self.transfer_object(index,self.world,self.player,(self.player.x+self.world.tl_x,self.player.y+self.world.tl_y))
+						self.transfer_object(index,self.world,self.player,(self.player.x,self.player.y))
 
 			#drop
 			elif keypressed == ",":
@@ -119,11 +119,26 @@ class Engine:
 				if items ==[]:
 					self.print_bottom("you have nothing to drop!")
 				else:
-					self.print_bottomf(self.player.get_inventory())
-					self.print_bottom("What do you want to drop? (0,1,2,...")
+					self.print_bottomf("What do you want to drop? (0,1,2,...")
+					self.print_bottomf(self.player.get_inventory(),offset=1)
 
-					selection = int(input()[-1])
-					self.transfer_object(selection,self.player,self.world,(self.player.x+self.world.tl_x,self.player.y+self.world.tl_y))
+					while True:
+						choice = keyboard.read_key()
+						if choice =="esc":
+							selection =-1
+							break
+						try:
+							 selection = int(choice)
+						except:
+							 pass
+						else:
+							break
+
+					#selection = int(choice[-1])
+					self.clear_text_box()
+					if selection >=0:
+						self.print_bottom_time("You drop the "+self.player.objects[selection].name,1)
+						self.transfer_object(selection,self.player,self.world,(self.player.x,self.player.y))
 
 			# see inventory
 			elif keypressed == "i":
@@ -158,13 +173,15 @@ class Engine:
 				while True:
 					entry = keyboard.read_key()
 					try:
+						if entry =="esc":
+							choice =-1
 						choice = int(entry)
 						if choice in range(0,len(options),1):
 							break
 					except:
 						pass
-
-				self.print_overhead_time(self.player,options[choice],wait=1)
+				if choice >=0:
+					self.print_overhead_time(self.player,options[choice],wait=1)
 
 				#self.mode ="listen"
 				i = 0
@@ -242,6 +259,9 @@ class Engine:
 			ai.update()
 
 	def transfer_object(self,index,giver,receiver,loc):
+		i = loc[0]-self.world.tl_x
+		j = loc[1]-self.world.tl_y
+
 		self.last_vis[loc[1],loc[0]]=-1
 		obj=giver.lose(index)
 		obj.x = loc[0]
@@ -466,6 +486,7 @@ class Engine:
 		with self.t.location(0, self.t.height - self.textbox_height):
 			print(text)
 			time.sleep(wait)
+		self.clear_text_box()
 
 	def clear_text_box(self):
 		with self.t.location(0, self.t.height - self.textbox_height):
