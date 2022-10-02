@@ -25,18 +25,28 @@ def splitup(img,pixSize):
 	return np.array(new)
 
 def averageout(img):
+
 	img1 = np.array(img)
+	imgout = np.zeros((img.shape[0],img.shape[1],3))
 	for i in range(img.shape[1]):
 		for j in range(img.shape[0]):
-			img[j][i]=np.mean(img1[j][i],axis=0)
+			imgout[j][i]=np.mean(img1[j][i],axis=0)
 
-	return img
+	return imgout
 
 #new = np.ones(new1.shape)
 def blowup(img,pixSize,new_size):
 	blowup = np.zeros((new_size))
+	print(blowup.shape)
+	print(img.shape)
+
+	if len(img[1,1]) >3:
+		img = np.delete(img,4,axis=0)
+	#print(img)
+
 	for i in range(blowup.shape[1]):
 		for j in range(blowup.shape[0]):
+
 			blowup[j][i] = img[j][i]
 
 	return blowup
@@ -60,7 +70,7 @@ def display_fullscreen(filename,term):
 	#img = blowup(img,pixSize,(img.shape[0],img.shape[1],3))
 	img = blowup(img,pixSize,(term.height-8,term.width,3))
 	#img = blowup(img,pixSize,old_shape)
-	print(img.shape)
+	#print(img.shape)
 
 	img = np.array(img,dtype=np.uint8)
 
@@ -104,16 +114,16 @@ def clear_bg(img,init_colour,fin_colour):
 def display_small(filename,term,width,bg=(255,255,255),pos=(0,0)):
 
 	img = Image.open(filename)
+
+	img = img.convert("RGB")
+
 	img = np.array(img)
+
 	old_shape  = img.shape
-
 	pixSize = int(img.shape[1]/width)
-
 	img = averageout(splitup(img,pixSize))
 	img = blowup(img,pixSize,(img.shape[0],width,3))
 	img = np.array(img,dtype=np.uint8)
-
-	i = Image.fromarray(img,mode="RGB")
 
 	tolerance = 90
 	for i in range(img.shape[0]):
@@ -121,6 +131,32 @@ def display_small(filename,term,width,bg=(255,255,255),pos=(0,0)):
 		for j in range(img.shape[1]):
 			if(isnear(int(img[i,j,0]),bg[0],tolerance) and isnear(int(img[i,j,1]),bg[1],tolerance) and isnear(int(img[i,j,2]),bg[2],tolerance)):
 				line += term.black(" ")
+			else:
+				line += term.on_color_rgb(int(img[i,j,0]),int(img[i,j,1]),int(img[i,j,2]))+' '
+		with term.location(y=pos[0]+i,x=pos[1]):
+			print(line)
+
+def display_pix(filename,term,bg=(255,255,255),pos=(0,0)):
+
+	img = Image.open(filename)
+	img = img.convert("RGB")
+	img = np.array(img)
+	width = len(img)
+
+	old_shape  = img.shape
+	pixSize = 1
+	#img = averageout(splitup(img,pixSize))
+	#img = blowup(img,pixSize,(img.shape[0],img.shape[1],3))
+	img = np.array(img,dtype=np.uint8)
+
+	i = Image.fromarray(img,mode="RGB")
+	i.show()
+	tolerance = 90
+	for i in range(img.shape[0]):
+		line = ''
+		for j in range(img.shape[1]):
+			if(isnear(int(img[i,j,0]),bg[0],tolerance) and isnear(int(img[i,j,1]),bg[1],tolerance) and isnear(int(img[i,j,2]),bg[2],tolerance)):
+				line += term.white_on_black(" ")
 			else:
 				line += term.on_color_rgb(int(img[i,j,0]),int(img[i,j,1]),int(img[i,j,2]))+' '
 		with term.location(y=pos[0]+i,x=pos[1]):
