@@ -1,4 +1,4 @@
-from translate_image import display
+from translate_image import display_fullscreen
 from blessed import Terminal
 import time
 import keyboard
@@ -65,7 +65,7 @@ def search_around():
 def call_out():
     text = "You call out. Nearby there is a groan, and then nothing. Then from somewhere behind you a voice! \" Someone is alive! Over there!\" You hear footsteps and then a light shines down into your face, blinding you."
     return text
-display('assets/stars.jpg',term)
+display_fullscreen('assets/stars.jpg',term,term.height-8,term.width)
 
 intro = "You awaken among the remains of a passenger ship. Through the twisted, steaming carcass of the hull you can see that the sky is dark and full of stars. Space travel, safer than crossing the road, they said. Ha! But where were you going... and where did you come from? Your head aches and you want to sleep, but you know you must not."
 

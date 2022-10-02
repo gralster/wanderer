@@ -138,6 +138,6 @@ class Wall:
 class Tree:
 	def __init__(self,type):
 		self.opaque = True
-		self.symbol = "T"
+		self.symbol = "◭"
 		self.desc = "A tree"
 		self.can_walk = False
