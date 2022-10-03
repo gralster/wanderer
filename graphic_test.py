@@ -13,9 +13,9 @@ print(t.green("◭◭◭"))
 t.move(2,2)
 print(t.green("◭◭◭◭◭"))
 
-#display_small('assets/onetree.jpg',t,4,pos=(0,0))
+#display_small('assets/bigger_sprite.png',t,30,pos=(0,0))
 #display_pix('assets/test.png',t,pos=(2,3))
-display_pix('assets/sprite2.png',t,pos=(10,10),bg=(0,0,0))
+display_pix('assets/bigger_sprite.png',t,pos=(10,10),bg=(0,0,0))
 
 time.sleep(2)
 quit()

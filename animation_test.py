@@ -4,14 +4,15 @@ from translate_image import display_pix
 import time
 import os
 
-delay = 0.05
-
+delay = 0.02
+walkspeed = 5
 def update_player(y,x,lastface):
 
     keypressed = keyboard.read_key()
+    os.system('cls')
 
     if keypressed =="up":
-        y-=1
+        y-=walkspeed
         if lastface =='right':
             display_pix('assets/walkright.png',t,pos=(y,x),bg=(0,0,0))
         elif lastface == 'left':
@@ -19,7 +20,7 @@ def update_player(y,x,lastface):
         time.sleep(delay)
         #lastface = 'away'
     elif keypressed =="down":
-        y+=1
+        y+=walkspeed
         if lastface =='right':
             display_pix('assets/walkright.png',t,pos=(y,x),bg=(0,0,0))
         elif lastface == 'left':
@@ -27,12 +28,12 @@ def update_player(y,x,lastface):
         time.sleep(delay)
         #lastface = forward
     elif keypressed =="left":
-        x-=1
+        x-=walkspeed
         display_pix('assets/walkleft.png',t,pos=(y,x),bg=(0,0,0))
         time.sleep(delay)
         lastface = 'left'
     elif keypressed =="right":
-        x+=1
+        x+=walkspeed
         display_pix('assets/walkright.png',t,pos=(y,x),bg=(0,0,0))
         time.sleep(delay)
         lastface = 'right'
