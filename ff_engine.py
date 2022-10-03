@@ -368,8 +368,8 @@ class Engine:
 				self.display_ai(changes)
 
 			# update display of player
-			with self.t.location(y=self.player.y-self.world.tl_y,x=self.player.x-self.world.tl_x):
-				print(self.t.on_green+self.t.bold(self.player.symbol))
+			self.player.display_symbol(self.t,self.world.tl_y,self.world.tl_x)
+			#self.player.display_sprite(self.t,self.world.tl_y,self.world.tl_x)
 
 			# reset last seen array
 			# - must be last thing in display function
@@ -440,34 +440,30 @@ class Engine:
 		for obj in self.world.objects:
 			canSee =self.inFOV(self.player,obj.y,obj.x)
 			self.print_bottomf(canSee)
-			with self.t.location(y=obj.y-self.world.tl_y,x=obj.x-self.world.tl_x):
-				if canSee:
-					print(self.t.red_on_green(obj.symbol))
-					if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
-						with self.t.location(y=obj.y-self.world.last_tl_y,x=obj.x-self.world.last_tl_x):
-							print(self.t.red_on_green(" "))
-				else:
-					if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
-						with self.t.location(y=obj.y-self.world.last_tl_y,x=obj.x-self.world.last_tl_x):
-							print(self.t.red_on_darkseagreen4(" "))
-				if changes[obj.y-self.world.tl_y,obj.x-self.world.tl_x] ==-1:
-					print(self.t.red_on_darkseagreen4(obj.symbol))
+			if canSee:
+				# create
+				#obj.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)
+				obj.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
+				# delete old if frame has moved
+				if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
+					obj.clear_vis_symbol(self.t,self.world.last_tl_y,self.world.last_tl_x)
+			else:
+				if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
+					obj.clear_invis_symbol(self.t,self.world.last_tl_y,self.world.last_tl_x)
+					obj.display_invis_symbol(self.t,self.world.tl_y,self.world.tl_x)
+
+			if changes[obj.y-self.world.tl_y,obj.x-self.world.tl_x] ==-1:
+				obj.display_invis_symbol(self.t,self.world.tl_y,self.world.tl_x)
 
 	def display_ai(self,changes):
 		for ai in self.world.ais:
 			canSee =self.inFOV(self.player,ai.y,ai.x)
-			with self.t.location(y=ai.y-self.world.tl_y,x=ai.x-self.world.tl_x):
-				if canSee:
-					print(self.t.black_on_green(ai.symbol))
-					if (ai.last_y-self.world.last_tl_y !=  ai.y-self.world.tl_y) or (ai.last_x-self.world.last_tl_x !=  ai.x-self.world.tl_x):
-						with self.t.location(y=ai.y-self.world.last_tl_y,x=ai.x-self.world.last_tl_x):
-							print(self.t.red_on_green(" "))
-				else:
-					if (ai.last_y-self.world.last_tl_y !=  ai.y-self.world.tl_y) or (ai.last_x-self.world.last_tl_x !=  ai.x-self.world.tl_x):
-						with self.t.location(y=ai.y-self.world.last_tl_y,x=ai.x-self.world.last_tl_x):
-							print(self.t.red_on_darkseagreen4(" "))
-					if changes[ai.y-self.world.tl_y,ai.x-self.world.tl_x] ==-1:
-						print(self.t.black_on_darkseagreen4(ai.symbol))
+			if canSee:
+				ai.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
+				#ai.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)
+				if (ai.last_y-self.world.last_tl_y !=  ai.y-self.world.tl_y) or (ai.last_x-self.world.last_tl_x !=  ai.x-self.world.tl_x):
+					ai.clear_vis_symbol
+
 
 	### DISPLAY TEXT ##############################################
 

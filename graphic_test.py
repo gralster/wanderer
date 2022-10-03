@@ -15,9 +15,11 @@ print(t.green("◭◭◭◭◭"))
 
 #display_small('assets/bigger_sprite.png',t,30,pos=(0,0))
 #display_pix('assets/test.png',t,pos=(2,3))
-display_pix('assets/bigger_sprite.png',t,pos=(10,10),bg=(0,0,0))
-
-time.sleep(2)
+i = 1
+while i <5:
+    display_pix('assets/pot.png',t,pos=(20,20),bg=(0,0,0),scaleup=i)
+    i+=1
+    time.sleep(0.5)
 quit()
 i=0
 j=0

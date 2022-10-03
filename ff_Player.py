@@ -1,3 +1,4 @@
+from translate_image import display_pix
 
 class Player:
 
@@ -25,3 +26,10 @@ class Player:
 		for obj in self.objects:
 			in_inv.append(obj.name)
 		return(in_inv)
+
+	def display_symbol(self,t,tl_y,tl_x):
+		with t.location(y=self.y-tl_y,x=self.x-tl_x):
+			print(t.on_green+t.bold(self.symbol))
+
+	def display_sprite(self,t,tl_y,tl_x):
+		display_pix('assets/sprite2.png',t,pos=(self.y-tl_y,self.x-tl_x),bg=(0,0,0))

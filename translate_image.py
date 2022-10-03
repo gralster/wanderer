@@ -35,22 +35,23 @@ def averageout(img):
 	return imgout
 
 #new = np.ones(new1.shape)
-def blowup(img,pixSize,new_size):
+def crop(img,pixSize,new_size):
+	crop = np.zeros((new_size))
+	#if len(img[1,1]) >3:
+	#	img = np.delete(img,4,axis=0)
+	for i in range(crop.shape[1]):
+		for j in range(crop.shape[0]):
+			crop[j][i] = img[j][i]
+	return crop
+
+def blowup(img,new_size):
+	xscale = img.shape[1]/new_size[1]
+	yscale = img.shape[0]/new_size[0]
 	blowup = np.zeros((new_size))
-	print(blowup.shape)
-	print(img.shape)
-
-	if len(img[1,1]) >3:
-		img = np.delete(img,4,axis=0)
-	#print(img)
-
 	for i in range(blowup.shape[1]):
 		for j in range(blowup.shape[0]):
-
-			blowup[j][i] = img[j][i]
-
+			blowup[j][i] = img[int(j*yscale)][int(i*xscale)]
 	return blowup
-
 def display_fullscreen(filename,term):
 
 
@@ -67,9 +68,9 @@ def display_fullscreen(filename,term):
 	print(img.shape[0])
 	print(img.shape[1])
 
-	#img = blowup(img,pixSize,(img.shape[0],img.shape[1],3))
-	img = blowup(img,pixSize,(term.height-8,term.width,3))
-	#img = blowup(img,pixSize,old_shape)
+	#img = crop(img,pixSize,(img.shape[0],img.shape[1],3))
+	img = crop(img,pixSize,(term.height-8,term.width,3))
+	#img = crop(img,pixSize,old_shape)
 	#print(img.shape)
 
 	img = np.array(img,dtype=np.uint8)
@@ -122,7 +123,6 @@ def display_small(filename,term,width,bg=(255,255,255),pos=(0,0)):
 	old_shape  = img.shape
 	pixSize = int(img.shape[1]/width)
 	img = averageout(splitup(img,pixSize))
-	img = blowup(img,pixSize,(img.shape[0],width,3))
 	img = np.array(img,dtype=np.uint8)
 
 	tolerance = 90
@@ -136,7 +136,7 @@ def display_small(filename,term,width,bg=(255,255,255),pos=(0,0)):
 		with term.location(y=pos[0]+i,x=pos[1]):
 			print(line)
 
-def display_pix(filename,term,bg=(255,255,255),pos=(0,0)):
+def display_pix(filename,term,bg=(255,255,255),pos=(0,0),scaleup=1):
 
 	img = Image.open(filename)
 	img = img.convert("RGB")
@@ -146,7 +146,8 @@ def display_pix(filename,term,bg=(255,255,255),pos=(0,0)):
 	old_shape  = img.shape
 	pixSize = 1
 	#img = averageout(splitup(img,pixSize))
-	#img = blowup(img,pixSize,(img.shape[0],img.shape[1],3))
+	if scaleup!=1:
+		img = blowup(img,(img.shape[0]*scaleup,img.shape[1]*scaleup,3))
 	img = np.array(img,dtype=np.uint8)
 
 	#i = Image.fromarray(img,mode="RGB")
@@ -159,5 +160,5 @@ def display_pix(filename,term,bg=(255,255,255),pos=(0,0)):
 				line += term.white_on_black(" ")
 			else:
 				line += term.on_color_rgb(int(img[i,j,0]),int(img[i,j,1]),int(img[i,j,2]))+' '
-		with term.location(y=pos[0]+i,x=pos[1]):
+		with term.location(y=pos[0]-int(img.shape[0]/2)+i,x=pos[1]-int(img.shape[1]/2)):
 			print(line)
