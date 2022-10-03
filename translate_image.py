@@ -149,8 +149,8 @@ def display_pix(filename,term,bg=(255,255,255),pos=(0,0)):
 	#img = blowup(img,pixSize,(img.shape[0],img.shape[1],3))
 	img = np.array(img,dtype=np.uint8)
 
-	i = Image.fromarray(img,mode="RGB")
-	i.show()
+	#i = Image.fromarray(img,mode="RGB")
+	#i.show()
 	tolerance = 90
 	for i in range(img.shape[0]):
 		line = ''
