@@ -3,12 +3,13 @@ import math
 
 class Object:
 
-	def __init__(self,x,y,name,symbol,desc):
+	def __init__(self,x,y,name,symbol,asset_path,desc):
 		self.x= x
 		self.y = y
 		self.symbol =symbol
 		self.name = name
 		self.desc = desc
+		self.pix = asset_path
 
 	def display_vis_symbol(self,t,tl_y,tl_x):
 		with t.location(y=self.y-tl_y,x=self.x-tl_x):
@@ -30,7 +31,7 @@ class Object:
 		di = self.x-player.x
 		dj = self.y-player.y
 		distance = math.sqrt(di**2+ dj**2)
-		display_pix('assets/pot.png',t,pos=(self.y-tl_y,self.x-tl_x),bg=(0,0,0),scaleup=int(min(1,3/distance)))
+		display_pix(self.pix,t,pos=(self.y-tl_y,self.x-tl_x),bg=(0,0,0),scaleup=int(max(1,3/distance)))
 
 	def clear_sprite(self,t,tl_y,tl_x):
 		pass

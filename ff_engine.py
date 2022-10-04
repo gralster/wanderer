@@ -9,6 +9,9 @@ from blessed import Terminal
 import numpy as np
 import re
 
+from translate_image import display_pix
+from translate_image import display_small
+
 from ff_Map import Map
 from ff_Player import Player
 from ff_Object import Object
@@ -56,6 +59,7 @@ class Engine:
 	def setup_world(self):
 		self.world.gen_features()
 		self.world.place_player(self.player)
+		
 
 	def player_near_edge(self):
 		tolerance =self.player.sight+1
@@ -64,11 +68,18 @@ class Engine:
 		else:
 			 return False
 
+	def near_edge(self,y,x):
+		tolerance =self.player.sight+1
+		if self.screen_width-x <tolerance or self.screen_height-y <tolerance or x<tolerance or y <tolerance :
+			return True
+		else:
+			 return False
+
 	### UPDATING #######################################
 
 	def update_player(self):
 
-		if self.mode =="explore":
+		if self.mode =="map":
 
 			# movement
 
@@ -219,9 +230,20 @@ class Engine:
 			elif keypressed =="right":
 				self.highlight.i+=1
 
+			if self.near_edge(self.highlight.i,self.highlight.j):
+				if self.log:
+					self.errorfile.write("pushing edge of map with look\n")
+				self.highlight.j = self.highlight.last_j
+				self.highlight.i = self.highlight.last_i
+				self.world.move_map(keypressed)
+				#self.whole_screen_refresh=True
+
+				self.print_bottomf(self.world.tl_x,offset=1)
+				self.print_bottomf(self.world.tl_y,offset=2)
+
 			elif keypressed =="enter":
 
-				if self.world.explored[self.highlight.j,self.highlight.i]==False:
+				if self.world.explored[self.highlight.j+self.world.tl_y,self.highlight.i+self.world.tl_x]==False:
 					self.print_bottomf("You don't know what's over there.")
 
 				something_there = False
@@ -247,12 +269,17 @@ class Engine:
 				if something_there == False:
 					self.print_bottomf(self.world.tiles[self.highlight.j,self.highlight.i].desc)
 
+			elif keypressed =="m":
+				self.mode ="map"
+
+			elif keypressed =="z":
+				self.mode ="explore"
 
 			elif keypressed == "esc":
 				if self.log:
 					self.errorfile.write("look mode ended\n")
 				self.last_vis[self.highlight.j,self.highlight.i]=-1
-				self.mode="explore"
+				self.mode="map"
 
 	def update_ai(self):
 		for ai in self.world.ais:
@@ -286,29 +313,27 @@ class Engine:
 
 		with self.t.hidden_cursor():
 
-			if self.mode =="explore":
+			if self.mode =="map" or self.mode =="look":
 				if (self.player.last_y-self.world.last_tl_y !=  self.player.y-self.world.tl_y) or (self.player.last_x-self.world.last_tl_x !=  self.player.x-self.world.tl_x):
 					with self.t.location(y=self.player.last_y-self.world.tl_y,x=self.player.last_x-self.world.tl_x):
 						print(self.t.on_green(" "))
-					print(self.t.home)#+self.t.on_darkgreen)#self.t.clear_eos)
+				if self.mode =="look":
+					with self.t.location(y=self.highlight.last_j,x=self.highlight.last_i):
+						if self.world.explored[self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x]:
+							canSee =self.inFOV(self.player,self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x)
+							if canSee:
+								print(self.t.on_green(" "))
+							else:
+								print(self.t.on_darkseagreen4(" "))
+						else:
+							print(self.t.on_black(" "))
+					print(self.t.home)
 
 			for ai in self.world.ais:
 				canSee =self.inFOV(self.player,ai.y,ai.x)
 				if canSee:
 					if(( ai.x-self.world.tl_x )!=( ai.last_x-self.world.last_tl_x)) or ((ai.y-self.world.tl_y)!=(ai.last_y-self.world.last_tl_y)):
 						self.last_vis[ai.last_y-self.world.tl_y,ai.last_x-self.world.tl_x]-=1
-
-			if self.mode =="look":
-				with self.t.location(y=self.highlight.last_j,x=self.highlight.last_i):
-					if self.world.explored[self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x]:
-						canSee =self.inFOV(self.player,self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x)
-						if canSee:
-							print(self.t.on_green(" "))
-						else:
-							print(self.t.on_darkseagreen4(" "))
-					else:
-						print(self.t.on_black(" "))
-				print(self.t.home)
 
 	def setup_disp(self):
 
@@ -327,9 +352,47 @@ class Engine:
 			with self.t.location(y=j,x=int(self.screen_width)):
 				print(self.t.on_red(" "))
 
+	def display_sprite(self,t,i,j,object):
+		#di = i-self.player.x
+		dj = j-19 # for horizon line
+		#distance = math.sqrt(di**2+ dj**2)
+		if object.pix[-3:]=="png":
+			display_pix(object.pix,t,pos=(j,i),bg=(0,0,0))
+		else:
+			display_small(object.pix,t,2*dj,pos=(j,i))
+		#time.sleep(1)
+
 	def display(self):
 
 		if self.mode =="explore":
+			horizon = 20
+			for i in range(0,self.screen_width):
+				for j in range(0,horizon):
+					with self.t.location(y=j,x=i):
+						print(self.t.on_blue(" "))
+
+			for j in range(horizon,self.screen_height):
+				for i in range(0,self.screen_width):
+					#print(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x])
+					self.display_sprite(self.t,i,j,self.world.tiles[j+self.world.tl_y,i+self.world.tl_x])
+			for obj in self.world.objects:
+				canSee =self.inFOV(self.player,obj.y,obj.x)
+				self.print_bottomf(canSee)
+				if canSee:
+					self.display_sprite(self.t,obj.y+self.world.tl_y,obj.x+self.world.tl_x,obj)
+					time.sleep(1)
+					#obj.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
+			for ai in self.world.ais:
+				canSee =self.inFOV(self.player,ai.y,ai.x)
+				if canSee:
+					self.display_sprite(self.t,ai.y+self.world.tl_y,ai.x+self.world.tl_x,ai)
+					time.sleep(1)
+					#ai.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
+			self.display_sprite(self.t,self.player.y,self.player.x,self.player)
+			time.sleep(1)
+			#self.player.display_sprite(self.t,self.world.tl_y,self.world.tl_x)
+
+		if self.mode =="map" or self.mode=="look":
 
 			# set up array to show what has changed in view
 			current_vis = np.zeros((self.screen_height,self.screen_width))
@@ -363,27 +426,29 @@ class Engine:
 
 			else:
 				changes = current_vis-self.last_vis
-				self.display_ground(changes)
-				self.display_objects(changes)
-				self.display_ai(changes)
+				self.display_ground_on_map(changes)
+				self.display_objects_on_map(changes)
+				self.display_ai_on_map(changes)
 
 			# update display of player
+
 			self.player.display_symbol(self.t,self.world.tl_y,self.world.tl_x)
-			#self.player.display_sprite(self.t,self.world.tl_y,self.world.tl_x)
+
+
 
 			# reset last seen array
 			# - must be last thing in display function
 			self.last_vis = current_vis
 
 
-		elif self.mode =="look":
+			if self.mode =="look":
 
-			canSee =self.inFOV(self.player,self.highlight.j+self.world.tl_y,self.highlight.i+self.world.tl_x)
-			with self.t.location(y=self.highlight.j,x=self.highlight.i):
-				if canSee:
-					print(self.t.on_green(self.highlight.symbol))
-				else:
-					print(self.t.on_darkseagreen4(self.highlight.symbol))
+				canSee =self.inFOV(self.player,self.highlight.j+self.world.tl_y,self.highlight.i+self.world.tl_x)
+				with self.t.location(y=self.highlight.j,x=self.highlight.i):
+					if canSee:
+						print(self.t.on_green(self.highlight.symbol))
+					else:
+						print(self.t.on_darkseagreen4(self.highlight.symbol))
 
 	def inFOV(self,player,y,x):
 
@@ -418,7 +483,7 @@ class Engine:
 		else:
 			return False
 
-	def display_ground(self,changes):
+	def display_ground_on_map(self,changes):
 		for i in range(0,self.screen_width):
 			for j in range(0,self.screen_height):
 
@@ -435,15 +500,16 @@ class Engine:
 						with self.t.location(y=j,x=i):
 							print(self.t.on_black(" "))
 
-	def display_objects(self,changes):
+	def display_objects_on_map(self,changes):
 
 		for obj in self.world.objects:
 			canSee =self.inFOV(self.player,obj.y,obj.x)
 			self.print_bottomf(canSee)
 			if canSee:
 				# create
-				#obj.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)
-				obj.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
+				#obj.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
+				obj.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)
+				#
 				# delete old if frame has moved
 				if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
 					obj.clear_vis_symbol(self.t,self.world.last_tl_y,self.world.last_tl_x)
@@ -455,12 +521,12 @@ class Engine:
 			if changes[obj.y-self.world.tl_y,obj.x-self.world.tl_x] ==-1:
 				obj.display_invis_symbol(self.t,self.world.tl_y,self.world.tl_x)
 
-	def display_ai(self,changes):
+	def display_ai_on_map(self,changes):
 		for ai in self.world.ais:
 			canSee =self.inFOV(self.player,ai.y,ai.x)
 			if canSee:
-				ai.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
-				#ai.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)
+				#ai.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
+				ai.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)
 				if (ai.last_y-self.world.last_tl_y !=  ai.y-self.world.tl_y) or (ai.last_x-self.world.last_tl_x !=  ai.x-self.world.tl_x):
 					ai.clear_vis_symbol
 

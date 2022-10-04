@@ -133,7 +133,7 @@ def display_small(filename,term,width,bg=(255,255,255),pos=(0,0)):
 				line += term.black(" ")
 			else:
 				line += term.on_color_rgb(int(img[i,j,0]),int(img[i,j,1]),int(img[i,j,2]))+' '
-		with term.location(y=pos[0]+i,x=pos[1]):
+		with term.location(y=pos[0]-int(img.shape[0])+i,x=pos[1]-int(img.shape[1]/2)):
 			print(line)
 
 def display_pix(filename,term,bg=(255,255,255),pos=(0,0),scaleup=1):
@@ -157,8 +157,8 @@ def display_pix(filename,term,bg=(255,255,255),pos=(0,0),scaleup=1):
 		line = ''
 		for j in range(img.shape[1]):
 			if(isnear(int(img[i,j,0]),bg[0],tolerance) and isnear(int(img[i,j,1]),bg[1],tolerance) and isnear(int(img[i,j,2]),bg[2],tolerance)):
-				line += term.white_on_black(" ")
+				line += term.on_green(" ")
 			else:
 				line += term.on_color_rgb(int(img[i,j,0]),int(img[i,j,1]),int(img[i,j,2]))+' '
-		with term.location(y=pos[0]-int(img.shape[0]/2)+i,x=pos[1]-int(img.shape[1]/2)):
+		with term.location(y=pos[0]-int(img.shape[0])+i,x=pos[1]-int(img.shape[1]/2)):
 			print(line)

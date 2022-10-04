@@ -9,10 +9,11 @@ class Player:
 		self.last_x = x
 		self.last_y = y
 		self.speed = 1
-		self.sight = 5
+		self.sight = 25
 		self.symbol = "x"
 		self.objects = list()
 		self.hearing = 10
+		self.pix = 'assets/sprite2.png'
 
 	def gain(self,obj):
 		self.objects.append(obj)

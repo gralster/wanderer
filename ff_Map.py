@@ -2,6 +2,7 @@ import numpy as np
 from perlin_noise import PerlinNoise
 from ff_Object import Object
 from ff_AI import AI
+import random
 
 import matplotlib.pyplot as plt
 
@@ -40,16 +41,16 @@ class Map:
 
 		tree_map = np.zeros((map_height,map_width))
 		for i in range(map_width):
-		    for j in range(map_height):
-		        pixel = pic[i][j]
-		        if pixel > 0.1:
-		            tree_map[j,i]=1
+			for j in range(map_height):
+				pixel = pic[i][j]
+				if pixel > 0.1 and random.random() >0.8:
+					tree_map[j,i]=1
 
-		plt.imshow(tree_map, cmap='gray')
-		plt.show()
+		#plt.imshow(tree_map, cmap='gray')
+		#plt.show()
 
 
-		pot = Object(30,30,"Pot","P","A pot for cooking")
+		pot = Object(53,53,"Pot","P",'assets/pot.png',"A pot for cooking")
 		self.gain(pot)
 
 		Maximilian = AI("Maximilian","M",30,30,"a raven")
@@ -62,19 +63,20 @@ class Map:
 				else:
 					self.tiles[j,i]=Empty()
 		#print(self.tiles)
-
+		#self.tiles[52,52] = Tree("oak")
 		self.tiles[11,10] = Wall(5)
 		self.tiles[12,10] = Wall(5)
 		self.tiles[13,10] = Wall(5)
 		self.tiles[11,11] = Wall(5)
 
 	def place_player(self,player):
-		for i in range(15,self.width-270):
-			for j in range(15,self.height-270):
-				if self.tiles[j,i].can_walk:
-					player.x = i
-					player.y = j
-
+		# for i in range(50,self.width-270):
+		# 	for j in range(50,self.height-270):
+		# 		if self.tiles[j,i].can_walk:
+		# 			player.x = i
+		# 			player.y = j
+		player.x = 50
+		player.y = 50
 	def gain(self,obj):
 		self.objects.append(obj)
 
@@ -96,8 +98,6 @@ class Map:
 			return(at_loc)
 		else:
 			return(at_loc)
-
-
 
 	def move_map(self,keypressed):
 
@@ -124,6 +124,7 @@ class Empty:
 		self.prevState=False
 		self.desc = "There's nothing there."
 		self.can_walk = True
+		self.pix = "assets/grass.png"
 
 
 class Wall:
@@ -138,6 +139,7 @@ class Wall:
 class Tree:
 	def __init__(self,type):
 		self.opaque = True
-		self.symbol = "◭"
+		self.symbol = "T"
 		self.desc = "A tree"
 		self.can_walk = False
+		self.pix = 'assets/onetree.jpg'
