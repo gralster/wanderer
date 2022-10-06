@@ -8,7 +8,7 @@ from PIL import Image
 import blessed
 import colorsys
 from blessed import Terminal
-
+import time
 
 #print(new)
 def splitup(img,pixSize):
@@ -126,14 +126,21 @@ def display_small(filename,term,width,bg=(255,255,255),pos=(0,0)):
 	img = np.array(img,dtype=np.uint8)
 
 	tolerance = 90
-	for i in range(img.shape[0]):
+	for j in range(img.shape[0]):
 		line = ''
-		for j in range(img.shape[1]):
-			if(isnear(int(img[i,j,0]),bg[0],tolerance) and isnear(int(img[i,j,1]),bg[1],tolerance) and isnear(int(img[i,j,2]),bg[2],tolerance)):
-				line += term.black(" ")
+		count = 0
+		for i in range(img.shape[1]):
+
+			if(isnear(int(img[j,i,0]),bg[0],tolerance) and isnear(int(img[j,i,1]),bg[1],tolerance) and isnear(int(img[j,i,2]),bg[2],tolerance)):
+				with term.location(y=pos[0]-int(img.shape[0])+j,x=pos[1]-int(img.shape[1]/2)+i-count):
+					print(line)
+					count=0
+					line=''
 			else:
-				line += term.on_color_rgb(int(img[i,j,0]),int(img[i,j,1]),int(img[i,j,2]))+' '
-		with term.location(y=pos[0]-int(img.shape[0])+i,x=pos[1]-int(img.shape[1]/2)):
+				count+=1
+				line += term.on_color_rgb(int(img[j,i,0]),int(img[j,i,1]),int(img[j,i,2]))+' '
+
+		with term.location(y=pos[0]-int(img.shape[0])+j,x=pos[1]-int(img.shape[1]/2)+i):
 			print(line)
 
 def display_pix(filename,term,bg=(255,255,255),pos=(0,0),scaleup=1):
@@ -149,16 +156,23 @@ def display_pix(filename,term,bg=(255,255,255),pos=(0,0),scaleup=1):
 	if scaleup!=1:
 		img = blowup(img,(img.shape[0]*scaleup,img.shape[1]*scaleup,3))
 	img = np.array(img,dtype=np.uint8)
-
+	#print(img.shape)
 	#i = Image.fromarray(img,mode="RGB")
 	#i.show()
 	tolerance = 90
-	for i in range(img.shape[0]):
+	for j in range(img.shape[0]):
 		line = ''
-		for j in range(img.shape[1]):
-			if(isnear(int(img[i,j,0]),bg[0],tolerance) and isnear(int(img[i,j,1]),bg[1],tolerance) and isnear(int(img[i,j,2]),bg[2],tolerance)):
-				line += term.on_green(" ")
+		count = 0
+		for i in range(img.shape[1]):
+
+			if(isnear(int(img[j,i,0]),bg[0],tolerance) and isnear(int(img[j,i,1]),bg[1],tolerance) and isnear(int(img[j,i,2]),bg[2],tolerance)):
+				with term.location(y=pos[0]-int(img.shape[0])+j,x=pos[1]-int(img.shape[1]/2)+i-count):
+					print(line)
+					count=0
+					line=''
 			else:
-				line += term.on_color_rgb(int(img[i,j,0]),int(img[i,j,1]),int(img[i,j,2]))+' '
-		with term.location(y=pos[0]-int(img.shape[0])+i,x=pos[1]-int(img.shape[1]/2)):
+				count+=1
+				line += term.on_color_rgb(int(img[j,i,0]),int(img[j,i,1]),int(img[j,i,2]))+' '
+
+		with term.location(y=pos[0]-int(img.shape[0])+j,x=pos[1]-int(img.shape[1]/2)+i):
 			print(line)

@@ -8,7 +8,7 @@ import time
 
 def initiate():
 
-	game = Engine("explore",True)
+	game = Engine("map",True)
 	time.sleep(0.5)
 	game.setup_world()
 	game.clear()

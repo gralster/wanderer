@@ -13,14 +13,8 @@ print(t.green("◭◭◭"))
 t.move(2,2)
 print(t.green("◭◭◭◭◭"))
 
-display_small('assets/onetree.jpg',t,10,pos=(0,0))
-#display_pix('assets/test.png',t,pos=(2,3))
-quit()
-i = 1
-while i <5:
-    display_pix('assets/pot.png',t,pos=(20,20),bg=(0,0,0),scaleup=i)
-    i+=1
-    time.sleep(0.5)
+#display_small('assets/onetree.jpg',t,10,pos=(20,20))
+display_small('assets/onetree.jpg',t,10,pos=(50,50),bg=(0,0,0))
 quit()
 i=0
 j=0

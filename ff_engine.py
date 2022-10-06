@@ -59,7 +59,7 @@ class Engine:
 	def setup_world(self):
 		self.world.gen_features()
 		self.world.place_player(self.player)
-		
+
 
 	def player_near_edge(self):
 		tolerance =self.player.sight+1
@@ -89,19 +89,18 @@ class Engine:
 			keypressed = keyboard.read_key()
 
 			if keypressed =="up":
-				if self.world.tiles[self.player.y-self.player.speed,self.player.x].can_walk:
-					self.player.y -= self.player.speed
-			elif keypressed =="down":
-				if self.world.tiles[self.player.y+self.player.speed,self.player.x].can_walk:
-					self.player.y += self.player.speed
-			elif keypressed =="left":
-				if self.world.tiles[self.player.y,self.player.x-self.player.speed].can_walk:
-					self.player.x -= self.player.speed
-			elif keypressed =="right":
-				if self.world.tiles[self.player.y,self.player.x+self.player.speed].can_walk:
-					self.player.x += self.player.speed
+				self.player.move(+1,self.world.tiles)
 
+			elif keypressed =="down":
+				self.player.move(-1,self.world.tiles)
+			elif keypressed =="left":
+				self.player.rotate(-1)
+			elif keypressed =="right":
+				self.player.rotate(+1)
+			self.print_bottomf(self.player.x,offset=2)
+			self.print_bottomf(self.player.y,offset=3)
 			if self.player_near_edge():
+
 				if self.log:
 					self.errorfile.write("pushing edge of map\n")
 				self.player.y = self.player.last_y
@@ -111,6 +110,7 @@ class Engine:
 
 				self.print_bottomf(self.world.tl_x,offset=1)
 				self.print_bottomf(self.world.tl_y,offset=2)
+
 
 
 			# actions
@@ -151,6 +151,16 @@ class Engine:
 						self.print_bottom_time("You drop the "+self.player.objects[selection].name,1)
 						self.transfer_object(selection,self.player,self.world,(self.player.x,self.player.y))
 
+			#switch to explore mode:
+			elif keypressed=="e":
+				self.mode="explore"
+				os.system('cls')
+				if self.log:
+					self.errorfile.write("explore mode activated\n")
+			elif keypressed=="m":
+				self.mode=="map"
+				if self.log:
+					self.errorfile.write("map mode activated\n")
 			# see inventory
 			elif keypressed == "i":
 				self.print_bottom(self.player.get_inventory())
@@ -269,12 +279,6 @@ class Engine:
 				if something_there == False:
 					self.print_bottomf(self.world.tiles[self.highlight.j,self.highlight.i].desc)
 
-			elif keypressed =="m":
-				self.mode ="map"
-
-			elif keypressed =="z":
-				self.mode ="explore"
-
 			elif keypressed == "esc":
 				if self.log:
 					self.errorfile.write("look mode ended\n")
@@ -320,7 +324,7 @@ class Engine:
 				if self.mode =="look":
 					with self.t.location(y=self.highlight.last_j,x=self.highlight.last_i):
 						if self.world.explored[self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x]:
-							canSee =self.inFOV(self.player,self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x)
+							canSee =self.inFrontFOV(self.player,self.highlight.last_j+self.world.tl_y,self.highlight.last_i+self.world.tl_x)
 							if canSee:
 								print(self.t.on_green(" "))
 							else:
@@ -330,7 +334,7 @@ class Engine:
 					print(self.t.home)
 
 			for ai in self.world.ais:
-				canSee =self.inFOV(self.player,ai.y,ai.x)
+				canSee =self.inFrontFOV(self.player,ai.y,ai.x)
 				if canSee:
 					if(( ai.x-self.world.tl_x )!=( ai.last_x-self.world.last_tl_x)) or ((ai.y-self.world.tl_y)!=(ai.last_y-self.world.last_tl_y)):
 						self.last_vis[ai.last_y-self.world.tl_y,ai.last_x-self.world.tl_x]-=1
@@ -366,30 +370,69 @@ class Engine:
 
 		if self.mode =="explore":
 			horizon = 20
+
+			#print sky
 			for i in range(0,self.screen_width):
 				for j in range(0,horizon):
 					with self.t.location(y=j,x=i):
 						print(self.t.on_blue(" "))
 
-			for j in range(horizon,self.screen_height):
-				for i in range(0,self.screen_width):
-					#print(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x])
-					self.display_sprite(self.t,i,j,self.world.tiles[j+self.world.tl_y,i+self.world.tl_x])
-			for obj in self.world.objects:
-				canSee =self.inFOV(self.player,obj.y,obj.x)
-				self.print_bottomf(canSee)
-				if canSee:
-					self.display_sprite(self.t,obj.y+self.world.tl_y,obj.x+self.world.tl_x,obj)
-					time.sleep(1)
-					#obj.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
-			for ai in self.world.ais:
-				canSee =self.inFOV(self.player,ai.y,ai.x)
-				if canSee:
-					self.display_sprite(self.t,ai.y+self.world.tl_y,ai.x+self.world.tl_x,ai)
-					time.sleep(1)
-					#ai.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
-			self.display_sprite(self.t,self.player.y,self.player.x,self.player)
-			time.sleep(1)
+			#print ground and terrain
+
+			fovwidth = 23
+			j = 0
+			for y in range(self.player.y-self.player.sight,self.player.y):
+
+				ground_row = []
+				object_row  = []
+				people_row = []
+				element_pos = []
+
+				for x in range(self.player.x-int(fovwidth/2),self.player.x+int(fovwidth/2)):
+					self.print_bottomf((y-self.world.tl_y,x-self.world.tl_x),offset = 2)
+
+					canSee =self.inFrontFOV(self.player,y,x)
+					if canSee:
+						ground_row.append(self.world.tiles[y,x])
+						for obj in self.world.objects:
+							if y ==obj.y and x==obj.x:
+								object_row.append(obj)
+						for ai in self.world.ais:
+							if y ==ai.y and x==ai.x:
+								people_row.append(ai)
+				print(len(ground_row))
+				if len(ground_row) !=0:
+
+
+					for i in range(len(ground_row)):
+						ipos = int((self.screen_width/2)+((i-(len(ground_row)/2))*len(ground_row)))
+						element_pos.append(ipos)
+
+					tile = 0
+					object = 0
+					person = 0
+					for i in range(self.screen_width):
+						if i in element_pos:
+							index = element_pos.index(i)
+							self.display_sprite(self.t,i,j+horizon,ground_row[index])
+							try:
+								self.display_sprite(self.t,i,j+horizon,object_row[object])
+							except:
+								pass
+							try:
+								self.display_sprite(self.t,i,j+horizon,people_row[person])
+							except:
+								pass
+						else:
+							with self.t.location(y=horizon+j,x=i):
+								print(self.t.on_green(" "))
+						tile+=1
+						object+=1
+						person+=1
+
+				j+=1
+			self.display_sprite(self.t,int(self.screen_width/2),horizon+j,self.player)
+			#time.sleep(1)
 			#self.player.display_sprite(self.t,self.world.tl_y,self.world.tl_x)
 
 		if self.mode =="map" or self.mode=="look":
@@ -400,7 +443,7 @@ class Engine:
 			# make of record of what can currently be seen
 			for i in range(0,self.screen_width):
 				for j in range(0,self.screen_height):
-					canSee =self.inFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
+					canSee =self.inFrontFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
 					if canSee:
 						self.world.explored[j+self.world.tl_y,i+self.world.tl_x]=True
 						current_vis[j,i]=1
@@ -408,7 +451,7 @@ class Engine:
 			# add position of ais
 			for ai in self.world.ais:
 
-				canSee =self.inFOV(self.player,ai.y,ai.x)
+				canSee =self.inFrontFOV(self.player,ai.y,ai.x)
 
 				if ( ai.x-self.world.tl_x != ai.last_x-self.world.last_tl_x or ai.y-self.world.tl_y!=ai.last_y-self.world.last_tl_y) and canSee:
 					current_vis[ai.y-self.world.tl_y,ai.x-self.world.tl_x]=1
@@ -477,6 +520,56 @@ class Engine:
 			return(True)
 		return(True)
 
+	def inFrontFOV(self,player,y,x):
+		widevision = 0.25
+		if self.inFOV(player,y,x):
+
+			di = x-player.x
+			dj = y-player.y
+
+			if player.facing ==0:
+				if dj<0:
+					return True
+				else:
+					return False
+			if player.facing ==1:
+				if dj<di:
+					return True
+				else:
+					return False
+			if player.facing ==2:
+				if di>0:
+					return True
+				else:
+					return False
+			if player.facing ==3:
+				if dj>-1*di:
+					return True
+				else:
+					return False
+			if player.facing ==4:
+				if dj>0:
+					return True
+				else:
+					return False
+			if player.facing ==5:
+				if  dj>di:
+					return True
+				else:
+					return False
+			if player.facing ==6:
+				if di<0:
+					return True
+				else:
+					return False
+			if player.facing ==7:
+				if dj<-1*di:
+					return True
+				else:
+					return False
+
+
+
 	def is_on_screen(self,thing):
 		if (thing.x < self.world.tl_x+self.screen_width and thing.x >self.world.tl_x ) and (thing.y< self.world.tl_y+self.screen_height and thing.y >self.world.tl_y):
 			return True
@@ -487,8 +580,9 @@ class Engine:
 		for i in range(0,self.screen_width):
 			for j in range(0,self.screen_height):
 
-				canSee =self.inFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
-				if canSee:
+				#canSee =self.inFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
+				inFront = self.inFrontFOV(self.player,j+self.world.tl_y,i+self.world.tl_x)
+				if inFront:
 					if self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol != self.world.tiles[j+self.world.last_tl_y,i+self.world.last_tl_x].symbol or changes[j,i]>=1:
 						with self.t.location(y=j,x=i):
 							print(self.t.on_green(self.world.tiles[j+self.world.tl_y,i+self.world.tl_x].symbol))
@@ -503,7 +597,9 @@ class Engine:
 	def display_objects_on_map(self,changes):
 
 		for obj in self.world.objects:
-			canSee =self.inFOV(self.player,obj.y,obj.x)
+			#canSee =self.inFOV(self.player,obj.y,obj.x)
+			canSee = self.inFrontFOV(self.player,obj.y,obj.x)
+
 			self.print_bottomf(canSee)
 			if canSee:
 				# create
@@ -523,7 +619,7 @@ class Engine:
 
 	def display_ai_on_map(self,changes):
 		for ai in self.world.ais:
-			canSee =self.inFOV(self.player,ai.y,ai.x)
+			canSee =self.inFrontFOV(self.player,ai.y,ai.x)
 			if canSee:
 				#ai.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
 				ai.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)

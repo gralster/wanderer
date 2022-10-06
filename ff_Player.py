@@ -13,7 +13,42 @@ class Player:
 		self.symbol = "x"
 		self.objects = list()
 		self.hearing = 10
+		self.facing = 0
 		self.pix = 'assets/sprite2.png'
+
+	def move(self,direction,map):
+		aheadx = 0
+		aheady = 0
+		print(self.facing,self.speed*direction)
+		if self.facing ==0:
+			aheady = aheady + -1*self.speed*direction
+		elif self.facing ==1:
+			aheady = aheady + -1*self.speed*direction
+			aheadx = aheadx + self.speed*direction
+		elif self.facing ==2:
+			aheadx = aheadx + self.speed*direction
+		elif self.facing ==3:
+			aheady = aheady + self.speed*direction
+			aheadx = aheadx + self.speed*direction
+		elif self.facing ==4:
+			aheady = aheady + self.speed*direction
+		elif self.facing ==5:
+			aheady = aheady + self.speed*direction
+			aheadx = aheadx + -1*self.speed*direction
+		elif self.facing ==6:
+			aheadx = aheadx + -1*self.speed*direction
+		elif self.facing ==7:
+			aheady = aheady + -1*self.speed*direction
+			aheadx = aheadx + -1*self.speed*direction
+		#print(map[aheady,aheadx].can_walk)
+		if map[self.y + aheady,self.x + aheadx].can_walk:
+			self.y += aheady
+			self.x += aheadx
+
+		#print(aheadx,aheady)
+
+	def rotate(self,direction):
+		self.facing = (self.facing + direction)%8
 
 	def gain(self,obj):
 		self.objects.append(obj)
