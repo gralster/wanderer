@@ -19,7 +19,7 @@ class Player:
 	def move(self,direction,map):
 		aheadx = 0
 		aheady = 0
-		print(self.facing,self.speed*direction)
+		#print(self.facing,self.speed*direction)
 		if self.facing ==0:
 			aheady = aheady + -1*self.speed*direction
 		elif self.facing ==1:

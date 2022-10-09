@@ -356,84 +356,121 @@ class Engine:
 			with self.t.location(y=j,x=int(self.screen_width)):
 				print(self.t.on_red(" "))
 
-	def display_sprite(self,t,i,j,object):
+	def display_sprite(self,t,i,j,object,distance):
 		#di = i-self.player.x
 		dj = j-19 # for horizon line
 		#distance = math.sqrt(di**2+ dj**2)
 		if object.pix[-3:]=="png":
 			display_pix(object.pix,t,pos=(j,i),bg=(0,0,0))
 		else:
-			display_small(object.pix,t,2*dj,pos=(j,i))
+			display_small(object.pix,t,distance,pos=(j,i))
 		#time.sleep(1)
+
+	def get_display_grid(self):
+		horizon = 20
+		j=0
+		for y in range(self.player.y-self.player.sight,self.player.y+self.player.sight):
+
+			ground_row = []
+			object_row  = []
+			people_row = []
+			element_pos = []
+
+			for x in range(self.player.x-self.player.sight,self.player.x+self.player.sight):
+				self.print_bottomf((y-self.world.tl_y,x-self.world.tl_x),offset = 2)
+
+				canSee =self.inFrontFOV(self.player,y,x)
+				if canSee:
+					ground_row.append(self.world.tiles[y,x])
+					for obj in self.world.objects:
+						if y ==obj.y and x==obj.x:
+							object_row.append(obj)
+					for ai in self.world.ais:
+						if y ==ai.y and x==ai.x:
+							people_row.append(ai)
+			if len(ground_row) !=0:
+
+
+				for i in range(len(ground_row)):
+					ipos = int((self.screen_width/2)+((i-(len(ground_row)/2))*len(ground_row)))
+					element_pos.append(ipos)
+
+				tile = 0
+				object = 0
+				person = 0
+				for i in range(self.screen_width):
+					if i in element_pos:
+						index = element_pos.index(i)
+						self.display_sprite(self.t,i,j+horizon,ground_row[index],2*j)
+						try:
+							self.display_sprite(self.t,i,j+horizon,object_row[object],2*j)
+						except:
+							pass
+						try:
+							self.display_sprite(self.t,i,j+horizon,people_row[person],2*j)
+						except:
+							pass
+					else:
+						with self.t.location(y=horizon+j,x=i):
+							print(self.t.on_green(" "))
+					tile+=1
+					object+=1
+					person+=1
+
+			j+=1
+		self.display_sprite(self.t,int(self.screen_width/2),horizon+j,self.player,10)
+		#time.sleep(1)
+		#self.player.display_sprite(self.t,self.world.tl_y,self.world.tl_x)
+
+	def get_display_raycast(self):
+		self.player.facing = 0
+		horizon = 20
+
+		#print sky
+		for i in range(0,self.screen_width):
+			for j in range(0,horizon):
+				with self.t.location(y=j,x=i):
+					print(self.t.on_blue(" "))
+
+
+		# first find what can be seen
+		scaleup = 10
+		min_angle =-90
+		max_angle = 90
+		for angle in range(min_angle,max_angle):
+			di = self.player.sight*math.sin(angle*(math.pi/180))
+			dj = self.player.sight*math.cos(angle*(math.pi/180))
+			l=0
+			while l < 1:
+				distance = (l*di)**2 + (l*dj)**2
+				tilex = math.ceil(self.player.x +l*di)
+				tiley = math.ceil(self.player.y +l*dj)
+				self.print_bottomf((tiley,tilex))
+				self.print_bottomf(l,offset=1)
+				self.print_bottomf((l*dj,l*di),offset=2)
+				self.print_bottomf(distance,offset=3)
+				#time.sleep(0.3)
+				thing = self.world.tiles[tiley,tilex]
+				#print(thing)
+				self.display_sprite(self.t,int(l*di)+int(self.screen_width/2),int(self.screen_height)-int(l*dj),thing,1+distance*scaleup)
+
+				for obj in self.world.objects:
+					if tiley ==obj.y and tilex==obj.x:
+						self.display_sprite(self.t,int(l*di),int(l*dj),obj,1+distance*scaleup)
+				for ai in self.world.ais:
+					if tiley ==ai.y and tilex==ai.x:
+						self.display_sprite(self.t,l*di,l*dj,ai,1+distance*scaleup)
+				if thing.opaque:
+					break
+				l+=self.player.sight/500
 
 	def display(self):
 
 		if self.mode =="explore":
-			horizon = 20
 
-			#print sky
-			for i in range(0,self.screen_width):
-				for j in range(0,horizon):
-					with self.t.location(y=j,x=i):
-						print(self.t.on_blue(" "))
+			#self.get_display_raycast()
 
-			#print ground and terrain
-
-			fovwidth = 23
-			j = 0
-			for y in range(self.player.y-self.player.sight,self.player.y):
-
-				ground_row = []
-				object_row  = []
-				people_row = []
-				element_pos = []
-
-				for x in range(self.player.x-int(fovwidth/2),self.player.x+int(fovwidth/2)):
-					self.print_bottomf((y-self.world.tl_y,x-self.world.tl_x),offset = 2)
-
-					canSee =self.inFrontFOV(self.player,y,x)
-					if canSee:
-						ground_row.append(self.world.tiles[y,x])
-						for obj in self.world.objects:
-							if y ==obj.y and x==obj.x:
-								object_row.append(obj)
-						for ai in self.world.ais:
-							if y ==ai.y and x==ai.x:
-								people_row.append(ai)
-				print(len(ground_row))
-				if len(ground_row) !=0:
-
-
-					for i in range(len(ground_row)):
-						ipos = int((self.screen_width/2)+((i-(len(ground_row)/2))*len(ground_row)))
-						element_pos.append(ipos)
-
-					tile = 0
-					object = 0
-					person = 0
-					for i in range(self.screen_width):
-						if i in element_pos:
-							index = element_pos.index(i)
-							self.display_sprite(self.t,i,j+horizon,ground_row[index])
-							try:
-								self.display_sprite(self.t,i,j+horizon,object_row[object])
-							except:
-								pass
-							try:
-								self.display_sprite(self.t,i,j+horizon,people_row[person])
-							except:
-								pass
-						else:
-							with self.t.location(y=horizon+j,x=i):
-								print(self.t.on_green(" "))
-						tile+=1
-						object+=1
-						person+=1
-
-				j+=1
-			self.display_sprite(self.t,int(self.screen_width/2),horizon+j,self.player)
-			#time.sleep(1)
-			#self.player.display_sprite(self.t,self.world.tl_y,self.world.tl_x)
+			self.get_display_grid()
 
 		if self.mode =="map" or self.mode=="look":
 
