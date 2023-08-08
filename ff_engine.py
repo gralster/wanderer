@@ -33,11 +33,10 @@ class Engine:
 		print(" ")
 		print("	terminal width = "+str(self.t.width))
 		print("	terminal height = "+str(self.t.height))
-		time.sleep(2)
 
 		self.textbox_height = 8
 		self.update_screen()
-		self.player = Player("grace",5,5)
+		self.player = Player("grace",20,20)
 		self.world = Map(self.player,300,300)
 
 		self.highlight = Selector(None,None)
@@ -58,7 +57,11 @@ class Engine:
 
 	def setup_world(self):
 		self.world.gen_features()
+		print("done world.gen_features")
+
 		self.world.place_player(self.player)
+		print("done world.place_player")
+
 
 
 	def player_near_edge(self):
@@ -97,12 +100,20 @@ class Engine:
 				self.player.rotate(-1)
 			elif keypressed =="right":
 				self.player.rotate(+1)
-			self.print_bottomf(self.player.x,offset=2)
-			self.print_bottomf(self.player.y,offset=3)
+			self.print_bottomf("player x: " + str(self.player.x),offset=2)
+			self.print_bottomf("player y: " + str(self.player.y),offset=3)
+
+			if self.log:
+				self.errorfile.write("player x:"+ str(self.player.x)+", ")
+				self.errorfile.write("player y:"+ str(self.player.y)+"\n")	
+
 			if self.player_near_edge():
 
 				if self.log:
 					self.errorfile.write("pushing edge of map\n")
+					self.errorfile.write("new tl_x = "+str(self.world.tl_x)+", ")
+					self.errorfile.write("new tl_y = "+str(self.world.tl_y)+"\n")
+
 				self.player.y = self.player.last_y
 				self.player.x = self.player.last_x
 				self.world.move_map(keypressed)
@@ -113,7 +124,7 @@ class Engine:
 
 
 
-			# actions
+			# ACTIONS #############
 
 			# pick up
 			elif keypressed ==".":
@@ -307,7 +318,7 @@ class Engine:
 		else:
 			return False
 
-	### DISPLAY SCREEN ############################################
+### DISPLAY SCREEN ################################################################################
 
 	#def add_rel(self,pos):
 	#	return pos +
@@ -355,6 +366,8 @@ class Engine:
 				print(self.t.on_red(" "))
 			with self.t.location(y=j,x=int(self.screen_width)):
 				print(self.t.on_red(" "))
+
+		print("done setup_disp")
 
 	def display_sprite(self,t,i,j,object,distance):
 		#di = i-self.player.x
@@ -512,7 +525,8 @@ class Engine:
 
 			# update display of player
 
-			self.player.display_symbol(self.t,self.world.tl_y,self.world.tl_x)
+			#self.player.display_symbol(self.t,self.world.tl_y,self.world.tl_x)
+			self.player.display_sprite(self.t,self.world.tl_y,self.world.tl_x)
 
 
 
@@ -634,25 +648,29 @@ class Engine:
 	def display_objects_on_map(self,changes):
 
 		for obj in self.world.objects:
-			#canSee =self.inFOV(self.player,obj.y,obj.x)
-			canSee = self.inFrontFOV(self.player,obj.y,obj.x)
 
-			self.print_bottomf(canSee)
-			if canSee:
-				# create
-				#obj.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
-				obj.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)
-				#
-				# delete old if frame has moved
-				if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
-					obj.clear_vis_symbol(self.t,self.world.last_tl_y,self.world.last_tl_x)
-			else:
-				if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
-					obj.clear_invis_symbol(self.t,self.world.last_tl_y,self.world.last_tl_x)
+			if self.is_on_screen(obj):
+
+				#canSee =self.inFOV(self.player,obj.y,obj.x)
+				canSee = self.inFrontFOV(self.player,obj.y,obj.x)
+
+				self.print_bottomf(canSee)
+
+				if canSee:
+					# create
+					#obj.display_vis_sprite(self.t,self.player,self.world.tl_y,self.world.tl_x)
+					obj.display_vis_symbol(self.t,self.world.tl_y,self.world.tl_x)
+					#
+					# delete old if frame has moved
+					if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
+						obj.clear_vis_symbol(self.t,self.world.last_tl_y,self.world.last_tl_x)
+				else:
+					if (obj.y-self.world.last_tl_y !=  obj.y-self.world.tl_y) or (obj.x-self.world.last_tl_x !=  obj.x-self.world.tl_x):
+						obj.clear_invis_symbol(self.t,self.world.last_tl_y,self.world.last_tl_x)
+						obj.display_invis_symbol(self.t,self.world.tl_y,self.world.tl_x)
+
+				if changes[obj.y-self.world.tl_y,obj.x-self.world.tl_x] ==-1:
 					obj.display_invis_symbol(self.t,self.world.tl_y,self.world.tl_x)
-
-			if changes[obj.y-self.world.tl_y,obj.x-self.world.tl_x] ==-1:
-				obj.display_invis_symbol(self.t,self.world.tl_y,self.world.tl_x)
 
 	def display_ai_on_map(self,changes):
 		for ai in self.world.ais:

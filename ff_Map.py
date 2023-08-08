@@ -17,8 +17,8 @@ class Map:
 		print("	map height = "+str(self.height))
 
 		# screen relative position within map
-		self.tl_y = 20
-		self.tl_x = 20
+		self.tl_y = 5
+		self.tl_x = 5
 		self.last_tl_y = self.tl_y
 		self.last_tl_x = self.tl_x
 
@@ -26,8 +26,8 @@ class Map:
 		self.objects = list()
 		self.ais = list()
 
-		self.tiles = np.ndarray((y,x),dtype=np.object)
-		self.explored = np.ndarray((y,x),dtype=np.object)
+		self.tiles = np.ndarray((y,x),dtype=object)
+		self.explored = np.ndarray((y,x),dtype=object)
 		self.explored.fill(False)
 
 	def gen_features(self):
@@ -75,8 +75,13 @@ class Map:
 		# 		if self.tiles[j,i].can_walk:
 		# 			player.x = i
 		# 			player.y = j
-		player.x = 50
-		player.y = 50
+		while True:
+			if self.tiles[player.y,player.x].can_walk:
+				break
+			else:
+				player.x+=1
+				player.y+=1
+
 	def gain(self,obj):
 		self.objects.append(obj)
 

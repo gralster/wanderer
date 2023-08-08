@@ -9,7 +9,7 @@ class Player:
 		self.last_x = x
 		self.last_y = y
 		self.speed = 1
-		self.sight = 25
+		self.sight = 10
 		self.symbol = "x"
 		self.objects = list()
 		self.hearing = 10

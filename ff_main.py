@@ -20,10 +20,14 @@ def update(game):
 	game.update_player()
 	game.update_ai()
 	game.update_screen()
-	time.sleep(0.005)
+	time.sleep(0.05)
 
-	#time.sleep(0.15)
 
 game = initiate()
+print("done game initiation")
+
+print("Running game...")
+
 while True:
 	update(game)
+
